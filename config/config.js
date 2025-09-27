@@ -57,7 +57,7 @@ async function loadOptions() {
 async function saveOptions() {
     portError.classList.add('hidden');
     const port = parseInt(serverPortInput.value, 10);
-    const isChecked = showPopupCheckbox.checked.toString();
+    const doPopup = showPopupCheckbox.checked.toString();
 
     if (isNaN(port) || port < 1 || port > 65535) {
         portError.classList.remove('hidden');
@@ -67,13 +67,13 @@ async function saveOptions() {
 
     try {
         await browser.storage.local.set({ nadekoPort: port });
-        await browser.storage.local.set({ showPopup: isChecked })
+        await browser.storage.local.set({ showPopup: doPopup })
 
-        console.debug(`[Config[ Succesfully set port to ${port} and show to ${isChecked}`)
+        console.debug(`[Config[ Succesfully set port to ${port} and show to ${doPopup}`)
         showStatusMessage('Settings saved successfully!', 'success');
 
         // Notify background script of port change to refresh cache immediately
-        browser.runtime.sendMessage({ type: "settingChanged", newPort: port, showChecked: isChecked }).catch(e => {
+        browser.runtime.sendMessage({ type: "configChanged", newPort: port, showChecked: doPopup }).catch(e => {
             console.warn("[Config] Could not notify background script of port change:", e);
         });
 
