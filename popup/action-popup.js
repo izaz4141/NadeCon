@@ -17,14 +17,14 @@ let currentTabId = null;
  */
 function showMessageBox(message, type = 'info') {
     messageBox.textContent = message;
-    messageBox.className = `fixed bottom-4 left-1/2 -translate-x-1/2 p-2 text-sm rounded-lg shadow-lg transition-opacity duration-300 ease-out opacity-0`;
+    messageBox.className = `fixed bottom-4 left-1/2 -translate-x-1/2 p-2 text-sm rounded-lg shadow-lg transition-opacity duration-300 ease-out opacity-0 border border-gray-700`;
 
     if (type === 'success') {
-        messageBox.classList.add('bg-green-600', 'text-white');
+        messageBox.classList.add('bg-green-700', 'text-white');
     } else if (type === 'error') {
-        messageBox.classList.add('bg-red-600', 'text-white');
+        messageBox.classList.add('bg-red-700', 'text-white');
     } else {
-        messageBox.classList.add('bg-gray-800', 'text-white');
+        messageBox.classList.add('bg-gray-900', 'text-white');
     }
 
     messageBox.classList.remove('hidden');
@@ -59,14 +59,14 @@ function addUrlToPopup(mediaItem) {
     }
 
     const urlItem = document.createElement('div');
-    urlItem.className = 'bg-white p-3 rounded-lg shadow-sm flex items-center justify-between text-sm break-all';
+    urlItem.className = 'bg-gray-700 p-3 rounded-lg shadow-sm flex items-center justify-between text-sm break-all text-gray-200 border border-gray-600';
     urlItem.innerHTML = `
         <div class="flex-grow pr-2">
             <span class="url-item-text block line-clamp-2" data-original-url="${url}">${filename}</span>
         </div>
         <div class="flex-shrink-0 flex space-x-2">
-            <button class="copy-btn bg-blue-500 hover:bg-blue-600 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out">Copy</button>
-            <button class="download-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out">Download</button>
+            <button class="copy-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out">Copy</button>
+            <button class="download-btn bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out">Download</button>
         </div>
     `;
 
@@ -120,18 +120,18 @@ function refreshUrlList(mediaItems) {
  * @param {boolean | null} isAlive - true if alive, false if not, null if checking.
  */
 function updateServerStatusIndicator(isAlive) {
-    serverStatusText.classList.remove('text-green-600', 'text-red-600', 'text-gray-600');
+    serverStatusText.classList.remove('text-green-600', 'text-red-600', 'text-gray-600', 'text-green-400', 'text-red-400', 'text-gray-400');
     if (isAlive === true) {
         serverStatusText.textContent = 'Nadeko Connection: Alive';
-        serverStatusText.classList.add('text-green-600');
+        serverStatusText.classList.add('text-green-400');
         console.debug("[Popup] Server status: Alive.");
     } else if (isAlive === false) {
         serverStatusText.textContent = 'Nadeko Connection: Not Alive';
-        serverStatusText.classList.add('text-red-600');
+        serverStatusText.classList.add('text-red-400');
         console.debug("[Popup] Server status: Not Alive.");
     } else {
         serverStatusText.textContent = 'Checking connection status...';
-        serverStatusText.classList.add('text-gray-600');
+        serverStatusText.classList.add('text-gray-400');
         console.debug("[Popup] Server status: Checking...");
     }
 }

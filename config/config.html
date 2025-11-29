@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,32 +8,43 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         body {
-            width: 400px; /* Matched with browser.windows.create width */
+            width: 400px;
+            /* Matched with browser.windows.create width */
             padding: 1.5rem;
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #334155;
+            background-color: #1e293b;
+            color: #e2e8f0;
         }
     </style>
     <link rel="stylesheet" href="config.css">
 </head>
+
 <body class="p-6 m-auto">
-    <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">NadeCon Configuration</h1>
+    <h1 class="text-2xl font-bold mb-6 text-center text-gray-100">NadeCon Configuration</h1>
 
     <div class="mb-4">
-        <label for="serverPort" class="block text-sm font-medium text-gray-700 mb-2">Server Port:</label>
+        <label for="bindAddress" class="block text-sm font-medium text-gray-300 mb-2">Bind Address:</label>
+        <input type="text" id="bindAddress" placeholder="localhost" value="localhost"
+            class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 text-gray-200 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-4">
+        <label for="serverPort" class="block text-sm font-medium text-gray-300 mb-2">Server Port:</label>
         <input type="number" id="serverPort" min="1" max="65535" value="12345"
-               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-        <p id="portError" class="text-red-500 text-xs mt-1 hidden">Port must be between 1 and 65535.</p>
-    
-        <label for="showPopup" class="block text-sm font-medium text-gray-700 mt-4 mb-2">Show Popup when Media Detected</label>
+            class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 text-gray-200 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+        <p id="portError" class="text-red-400 text-xs mt-1 hidden">Port must be between 1 and 65535.</p>
+
+        <label for="apiKey" class="block text-sm font-medium text-gray-300 mt-4 mb-2">API Key:</label>
+        <input type="password" id="apiKey" placeholder="Enter API Key from Nadeko App"
+            class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 text-gray-200 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+
+        <label for="showPopup" class="block text-sm font-medium text-gray-300 mt-4 mb-2">Show Popup when Media
+            Detected</label>
         <label class="toggle-switch">
             <input type="checkbox" id="showPopup">
             <span class="slider"></span>
         </label>
     </div>
 
-    <button id="saveBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold mt-2 mb-1 py-2 px-4 rounded-md shadow-md transition duration-150 ease-in-out">
+    <button id="saveBtn"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold mt-2 mb-1 py-2 px-4 rounded-md shadow-md transition duration-150 ease-in-out">
         Save Settings
     </button>
 
@@ -42,4 +54,5 @@
 
     <script src="config.js"></script>
 </body>
+
 </html>

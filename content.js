@@ -1,176 +1,10 @@
 // content.js - This script is injected into web pages and handles both media detection and stacking popups
 
-// Define the core CSS for the popups and their container
-const popupCss = `
-/* Container for all individual popups */
-#media-detector-popup-container {
-    position: fixed;
-    bottom: 12px;
-    left: 12px;
-    display: flex;
-    flex-direction: column-reverse; /* Stacks new popups upwards from the bottom */
-    gap: 8px; /* Space between stacked popups */
-    z-index: 10000; /* Ensure it's on top of page content */
-    pointer-events: none; /* Allow clicks to pass through container to individual popups */
-}
-
-/* Styles for each individual media popup item */
-.media-detector-popup-item {
-    background: #2a2a2e;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-left: 4px solid #0a84ff;
-    font-family: Arial, sans-serif;
-    opacity: 0; /* Initial opacity set here in CSS */
-    transform: translateY(20px); /* Initial transform set here in CSS */
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out; /* Animation transition */
-    width: fit-content; /* Adjust width to content */
-    min-width: 180px; /* Minimum width for readability */
-    /* Removed max-width here to allow inner content to dictate overall width */
-    pointer-events: all;
-    box-sizing: border-box;
-    overflow: visible;
-    height: auto;
-    min-height: 40px;
-}
-
-.media-detector-popup-item.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.media-detector-popup-item .popup-icon {
-    font-size: 1rem;
-    color: white;
-    display: block;
-    line-height: 1;
-    flex-shrink: 0; /* Prevent icon from shrinking */
-}
-
-.media-detector-popup-item .popup-content {
-    flex-grow: 1; /* Allow content to take available space */
-    display: flex; /* Changed to flex */
-    flex-direction: row; /* Changed to row for inline layout */
-    align-items: center; /* Align items vertically in the row */
-    gap: 8px; /* Space between filename and button */
-    height: auto;
-    min-height: 30px;
-    overflow: visible;
-}
-
-.media-detector-popup-item .popup-content p {
-    margin: 0;
-    font-size: 0.7rem;
-    opacity: 0.9;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: white;
-    visibility: visible;
-    line-height: 1.2;
-    min-height: 1em;
-    max-width: 12ch; /* Limit filename to ~12 characters (ch unit) */
-    flex-shrink: 1; /* Allow text to shrink if necessary */
-    flex-grow: 0; /* Don't allow text to grow beyond its content or max-width */
-}
-
-.media-detector-popup-item .download-btn {
-    font-size: 0.7rem; /* Reduced font size */
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.3s;
-    padding: 2px 4px; /* Reduced padding */
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: unset;
-    height: unset;
-    text-align: center;
-    line-height: 1.2;
-    box-sizing: border-box;
-    visibility: visible;
-    margin-top: 0; /* Reset margin-top for row layout */
-    pointer-events: auto;
-    flex-shrink: 0; /* Prevent button from shrinking */
-}
-
-.media-detector-popup-item .close-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: #fff;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s;
-    font-size: 0.8rem;
-    line-height: 1;
-    flex-shrink: 0; /* Prevent button from shrinking */
-    box-sizing: border-box;
-    visibility: visible;
-    pointer-events: auto;
-}
-
-.media-detector-popup-item .download-btn:hover,
-.media-detector-popup-item .close-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.media-detector-popup-item .download-btn.error {
-    background: #ff0039;
-    animation: shake 0.5s;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20%, 60% { transform: translateX(-5px); }
-    40%, 80% { transform: translateX(5px); }
-}
-`;
-
-// Inject styles using adoptedStyleSheets if available (more robust against webpage CSS)
-if (document.adoptedStyleSheets && CSSStyleSheet) {
-    try {
-        const sheet = new CSSStyleSheet();
-        sheet.replaceSync(popupCss);
-        document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
-        console.debug("[Content Script] Styles injected using adoptedStyleSheets.");
-    } catch (e) {
-        console.warn("[Content Script] adoptedStyleSheets failed, falling back to <style> tag:", e);
-        const styleElement = document.createElement('style');
-        styleElement.textContent = popupCss;
-        document.head.appendChild(styleElement);
-        console.debug("[Content Script] Styles injected using <style> tag.");
-    }
-} else {
-    // Fallback for older browsers or environments without adoptedStyleSheets
-    const styleElement = document.createElement('style');
-    styleElement.textContent = popupCss;
-    document.head.appendChild(styleElement);
-    console.debug("[Content Script] Styles injected using <style> tag.");
-}
-
+// Load external CSS file for popup styling
+const cssLink = document.createElement('link');
+cssLink.rel = 'stylesheet';
+cssLink.href = browser.runtime.getURL('popup/media-popup.css');
+document.head.appendChild(cssLink);
 
 // Ensure the popup container exists and is added to the DOM
 let popupContainer = document.getElementById('media-detector-popup-container');
@@ -178,237 +12,556 @@ if (!popupContainer) {
     popupContainer = document.createElement('div');
     popupContainer.id = 'media-detector-popup-container';
     document.body.appendChild(popupContainer);
-    console.debug("[Content Script] Created and appended #media-detector-popup-container to body.");
-} else {
-    console.debug("[Content Script] #media-detector-popup-container already exists.");
+}
+
+// A Set to keep track of URLs for which popups are currently active
+const activePopupUrls = new Set();
+const processedUrls = new Set();
+
+// Track showPopup setting
+let shouldShowPopup = false;
+
+// Initialize setting from storage (returns a promise so we can wait for it)
+async function initializeSettings() {
+    const result = await browser.storage.local.get('showPopup');
+    console.debug(`[Content Script] Raw showPopup value from storage:`, result.showPopup, `(type: ${typeof result.showPopup})`);
+    // Handle both boolean true and string 'true'
+    shouldShowPopup = result.showPopup === true || result.showPopup === 'true';
+    console.debug(`[Content Script] showPopup setting initialized to: ${shouldShowPopup}`);
 }
 
 
-// A Set to keep track of URLs for which popups are currently active, to prevent exact duplicates
-const activePopupUrls = new Set();
-const processedUrls = new Set(); // To keep track of URLs already processed for DOM elements
+// Listen for storage changes
+browser.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.showPopup) {
+        console.debug(`[Content Script] showPopup changed - old:`, changes.showPopup.oldValue, `new:`, changes.showPopup.newValue, `(type: ${typeof changes.showPopup.newValue})`);
+        // Handle both boolean true and string 'true'
+        shouldShowPopup = changes.showPopup.newValue === true || changes.showPopup.newValue === 'true';
+        console.debug(`[Content Script] showPopup setting changed to: ${shouldShowPopup}`);
+        if (!shouldShowPopup) {
+            // Close all popups if setting is disabled
+            const allPopups = document.querySelectorAll('.media-detector-popup-item');
+            allPopups.forEach(popup => popup.remove());
+            activePopupUrls.clear();
+        }
+    }
+});
 
 /**
- * Handles errors during the download process (e.g., app not running).
- * @param {HTMLElement} downloadButton - The download button element.
- * @param {HTMLElement} popupElement - The individual popup div element.
- * @param {string} url - The URL associated with this popup.
+ * Handles errors during the download process.
  */
-function handleDownloadError(downloadButton, popupElement, url) {
-    downloadButton.textContent = '✗ Failed! Connecting with App';
+function handleDownloadError(downloadButton, popupElement, url, filename) {
+    downloadButton.textContent = '✗ Failed!';
     downloadButton.style.background = '#ff0039';
-    downloadButton.classList.add('error');
-    downloadButton.disabled = false;
-
-    if (downloadButton._retryHandler) {
-        downloadButton.removeEventListener('click', downloadButton._retryHandler);
-    }
-
-    const newHandler = () => {
-        downloadButton.textContent = 'Sending...';
-        downloadButton.style.background = 'rgba(255, 255, 255, 0.1)';
-        downloadButton.classList.remove('error');
-        downloadButton.disabled = true;
-
-        browser.runtime.sendMessage({
-            type: 'initiateSmartDownload',
-            url: url,
-            filename: popupElement.querySelector('p').textContent
-        }).then(response => {
-            if (response && response.success) {
-                downloadButton.textContent = '✓ URL Sent!';
-                downloadButton.style.background = '#30e60b';
-                setTimeout(() => { popupElement.remove(); activePopupUrls.delete(url); }, 1500);
-            } else {
-                console.error(`[Content Script] Background script reported error for ${url}: ${response.error}`);
-                handleDownloadError(downloadButton, popupElement, url);
-            }
-        }).catch(error => {
-            console.error(`[Content Script] Error sending message to background for ${url}:`, error);
-            handleDownloadError(downloadButton, popupElement, url);
-        });
-    };
-    downloadButton.addEventListener('click', newHandler);
-    downloadButton._retryHandler = newHandler;
 
     setTimeout(() => {
-        if (popupElement.isConnected && downloadButton.classList.contains('error')) {
-            downloadButton.textContent = 'Download'; // Revert to 'Download' on timeout
+        if (popupElement.isConnected) {
+            downloadButton.textContent = 'Download';
             downloadButton.style.background = 'rgba(255, 255, 255, 0.1)';
-            downloadButton.classList.remove('error');
             downloadButton.disabled = false;
         }
-    }, 5000);
+    }, 3000);
 }
 
 /**
- * Displays an individual media download popup.
- * @param {object} mediaItem - The media item object ({url, filename})
+ * Initiates download for a specific item
+ */
+function initiateDownload(url, filename, button, popup) {
+    button.disabled = true;
+    button.textContent = 'Sending...';
+
+    browser.runtime.sendMessage({
+        type: 'initiateSmartDownload',
+        url: url,
+        filename: filename
+    }).then(response => {
+        if (response && response.success) {
+            button.textContent = '✓ Sent!';
+            button.style.background = '#30e60b';
+            setTimeout(() => {
+                if (popup.isConnected) popup.remove();
+                activePopupUrls.delete(url);
+            }, 1500);
+        } else {
+            handleDownloadError(button, popup, url, filename);
+        }
+    }).catch(error => {
+        handleDownloadError(button, popup, url, filename);
+    });
+}
+
+/**
+ * Displays an individual media download popup or a menu for multiple items.
+ * @param {object|Array} mediaItem - The media item object ({url, filename}) or array of items.
  */
 function showMediaDownloadPopup(mediaItem) {
-    const { url, filename } = mediaItem;
+    // If it's an array, it's a menu (YouTube)
+    const isMenu = Array.isArray(mediaItem);
+    const mainItem = isMenu ? mediaItem[0] : mediaItem;
+    const { url, filename } = mainItem;
 
-    console.debug(`[Content Script] showMediaDownloadPopup called for: ${filename} (${url}).`);
+    // Unique key for the popup (use video ID for menu, or URL for single)
+    const popupKey = isMenu ? (mainItem.videoId || url) : url;
 
-    if (activePopupUrls.has(url)) {
-        console.debug(`[Content Script] Popup for ${url} is already active. Skipping creation.`);
-        return;
+    if (activePopupUrls.has(popupKey)) return;
+    if (!shouldShowPopup) {
+        console.debug(`[Content Script] Popup blocked by showPopup setting for: ${filename}`);
+        return; // Respect user setting
     }
 
-    console.debug(`[Content Script] Creating new media download popup for: ${filename} (${url})`);
-    
     const popup = document.createElement('div');
     popup.className = 'media-detector-popup-item';
 
-    let icon = '🔗';
-    const extMatch = filename.match(/\.([a-z0-9]+)$/i);
-    const extension = extMatch ? extMatch[1].toLowerCase() : '';
-
-    if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'ts', 'm3u8', 'mpd'].includes(extension)) {
-        icon = '🎬';
-    } else if (['mp3', 'wav', 'aac', 'flac', 'ogg'].includes(extension)) {
-        icon = '🔊';
-    } else if (['gif', 'jpg', 'jpeg', 'png', 'webp', 'svg'].includes(extension)) {
-        icon = '🖼️';
-    }
+    let icon = '🎬';
+    let titleText = isMenu ? 'Select Quality' : (filename.length > 20 ? filename.substring(0, 20) + '...' : filename);
+    let buttonText = isMenu ? 'Options ▾' : 'Download';
 
     popup.innerHTML = `
         <div class="popup-icon">${icon}</div>
         <div class="popup-content">
-            <p title="${filename}">${filename.length > 12 ? filename.substring(0, 12) + '...' : filename}</p>
-            <button class="download-btn">Download</button>
+            <p title="${isMenu ? 'Multiple formats available' : filename}">${titleText}</p>
+            <button class="download-btn">${buttonText}</button>
         </div>
         <button class="close-btn">✕</button>
     `;
 
-    popupContainer.appendChild(popup);
-    activePopupUrls.add(url);
+    if (isMenu) {
+        const menu = document.createElement('div');
+        menu.className = 'media-detector-menu';
 
-    console.debug(`[Content Script] Popup element appended to container for ${url}.`);
+        mediaItem.forEach(item => {
+            const menuItem = document.createElement('div');
+            menuItem.className = 'media-detector-menu-item';
+
+            let quality = item.quality || 'Unknown';
+            let extraInfo = '';
+            if (item.isAudio) {
+                quality = 'Audio';
+                extraInfo = item.ext || 'm4a';
+            } else if (item.isVideoOnly) {
+                extraInfo = 'Video Only';
+            } else {
+                extraInfo = item.ext || 'mp4';
+            }
+
+            menuItem.innerHTML = `
+                <span>${item.filename}</span>
+                <div style="display:flex; align-items:center;">
+                    <span class="format-info">${extraInfo}</span>
+                    <span class="quality-tag" style="margin-left:6px;">${quality}</span>
+                </div>
+            `;
+
+            menuItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                initiateDownload(item.url, item.filename, popup.querySelector('.download-btn'), popup);
+            });
+
+            menu.appendChild(menuItem);
+        });
+
+        popup.appendChild(menu);
+
+        const btn = popup.querySelector('.download-btn');
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menu.classList.toggle('show');
+            btn.textContent = menu.classList.contains('show') ? 'Close ▴' : 'Options ▾';
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!popup.contains(e.target)) {
+                menu.classList.remove('show');
+                btn.textContent = 'Options ▾';
+            }
+        });
+
+    } else {
+        const downloadButton = popup.querySelector('.download-btn');
+        downloadButton.addEventListener('click', () => {
+            initiateDownload(url, filename, downloadButton, popup);
+        });
+    }
+
+    popupContainer.appendChild(popup);
+    activePopupUrls.add(popupKey);
 
     setTimeout(() => {
-        if (popup.isConnected) {
-            popup.classList.add('show');
-            console.debug(`[Content Script] Popup class 'show' added for ${url}. Popup is connected.`);
-        } else {
-            console.debug(`[Content Script] Popup for ${url} was NOT connected when trying to add 'show' class.`);
-        }
+        if (popup.isConnected) popup.classList.add('show');
     }, 50);
 
     popup.querySelector('.close-btn').addEventListener('click', () => {
-        console.debug(`[Content Script] Popup closed by user for ${url}.`);
         popup.remove();
-        activePopupUrls.delete(url);
+        activePopupUrls.delete(popupKey);
     });
+}
 
-    const downloadButton = popup.querySelector('.download-btn');
-    downloadButton.addEventListener('click', () => {
-        downloadButton.disabled = true;
-        downloadButton.textContent = 'Sending...';
+//=============================================================
+//=================={Media Detector}===========================
+//=============================================================
 
+// Injected script to intercept XHR/Fetch
+const interceptionScript = `
+(function() {
+    const XHR = XMLHttpRequest.prototype;
+    const open = XHR.open;
+    const send = XHR.send;
+    const fetch = window.fetch;
+
+    // Intercept XMLHttpRequest
+    XHR.open = function(method, url) {
+        this._url = url;
+        return open.apply(this, arguments);
+    };
+
+    XHR.send = function(body) {
+        this.addEventListener('load', function() {
+            if (this._url && (this._url.includes('/player') || this._url.includes('videoplayback'))) {
+                try {
+                    const data = JSON.parse(this.responseText);
+                    window.postMessage({
+                        type: 'IDM_INTERCEPT_YOUTUBE',
+                        data: data,
+                        url: this._url
+                    }, '*');
+                } catch (e) {}
+            }
+        });
+        return send.apply(this, arguments);
+    };
+
+    // Intercept Fetch
+    window.fetch = async function(...args) {
+        const response = await fetch.apply(this, args);
+        const clone = response.clone();
+        const url = response.url;
+        
+        if (url && (url.includes('/player') || url.includes('videoplayback'))) {
+            clone.json().then(data => {
+                window.postMessage({
+                    type: 'IDM_INTERCEPT_YOUTUBE',
+                    data: data,
+                    url: url
+                }, '*');
+            }).catch(() => {});
+        }
+        
+        return response;
+    };
+})();
+`;
+
+class MediaDetector {
+    constructor() {
+        this.processedUrls = new Set();
+        this.siteType = this.detectSiteType();
+        this.detectedYouTubeVideos = new Set(); // Track detected video IDs
+
+        // Regex for detecting media URLs in text/scripts
+        this.mediaUrlRegex = /\b\w+:\/\/(?:[%T]*(?::[%T]*)?@)?[%H.]+\.[%H]+(?::\d+)?(?:\/(?:(?: +(?!\\w+:))?[%T/~;])*)?(?:\?[%Q]*)?(?:#[%T]*)?/gi;
+        // Simplified version for common media extensions
+        this.commonMediaExtRegex = /\.(mp4|webm|m4v|flv|f4v|ogv|3gp|mkv|mov|avi|wmv|mpg|mpeg|m4a|mp3|wav|aac|flac|ogg|opus|m3u8|mpd|f4m|ism|isml)(?:\?|$)/i;
+
+        console.debug(`[MediaDetector] Initializing for site type: ${this.siteType}`);
+        this.init();
+    }
+
+    detectSiteType() {
+        const hostname = window.location.hostname;
+        if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) return 'youtube';
+        if (hostname.includes('instagram.com')) return 'instagram';
+        if (hostname.includes('vimeo.com')) return 'vimeo';
+        return 'generic';
+    }
+
+    init() {
+        this.injectInterceptionScript();
+        this.scan();
+
+        const observer = new MutationObserver((mutations) => {
+            let shouldScan = false;
+            for (const mutation of mutations) {
+                if (mutation.addedNodes.length) shouldScan = true;
+            }
+            if (shouldScan) this.scan();
+        });
+
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
+
+        // Periodic scan for dynamic sites
+        setInterval(() => this.scan(), 3000);
+
+        // Listen for intercepted messages
+        window.addEventListener('message', (event) => {
+            if (event.source !== window) return;
+            if (event.data.type === 'IDM_INTERCEPT_YOUTUBE') {
+                this.processYouTubeResponse(event.data.data);
+            }
+        });
+    }
+
+    injectInterceptionScript() {
+        const script = document.createElement('script');
+        script.textContent = interceptionScript;
+        (document.head || document.documentElement).appendChild(script);
+        script.remove();
+    }
+
+    scan() {
+        if (this.siteType === 'youtube') {
+            this.scanYouTube();
+        } else if (this.siteType === 'instagram') {
+            this.scanInstagram();
+        }
+
+        // Always run generic scan as fallback/supplement
+        this.scanGeneric();
+        this.scanLinks();
+        this.scanImages();
+        this.scanIframes();
+    }
+
+    /**
+     * Checks if an element is visible and large enough to be relevant.
+     */
+    isValidMedia(element) {
+        if (!element) return false;
+
+        // Check if element is in DOM
+        if (!document.contains(element)) return false;
+
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+            return false;
+        }
+
+        const rect = element.getBoundingClientRect();
+        if (rect.width < 10 || rect.height < 10) {
+            // Too small, likely a tracking pixel or hidden control
+            return false;
+        }
+
+        return true;
+    }
+
+    scanYouTube() {
+        // Static scan for initial load data
+        const scripts = document.getElementsByTagName('script');
+        for (let script of scripts) {
+            if (script.textContent) {
+                const match = script.textContent.match(/var\s+ytInitialPlayerResponse\s*=\s*({.+?});/);
+                if (match && match[1]) {
+                    try {
+                        const data = JSON.parse(match[1]);
+                        this.processYouTubeResponse(data);
+                    } catch (e) { }
+                }
+            }
+        }
+    }
+
+    processYouTubeResponse(data) {
+        if (!data || !data.streamingData) return;
+
+        const videoDetails = data.videoDetails || {};
+        const videoId = videoDetails.videoId;
+
+        if (this.detectedYouTubeVideos.has(videoId)) return;
+
+        const title = videoDetails.title || 'YouTube Video';
+        const formats = data.streamingData.formats || [];
+        const adaptiveFormats = data.streamingData.adaptiveFormats || [];
+        const allFormats = [...formats, ...adaptiveFormats];
+
+        const detectedItems = [];
+
+        for (const format of allFormats) {
+            if (format.url) {
+                let quality = format.qualityLabel || format.quality;
+                if (!quality && format.height) quality = `${format.height}p`;
+                if (!quality) quality = 'Unknown';
+
+                const mime = format.mimeType || '';
+                let ext = 'mp4';
+                let isAudio = false;
+                let isVideoOnly = false;
+
+                if (mime.includes('webm')) ext = 'webm';
+                if (mime.includes('audio')) {
+                    ext = 'm4a';
+                    isAudio = true;
+                    if (mime.includes('webm')) ext = 'weba';
+                } else if (!mime.includes('audio') && adaptiveFormats.includes(format)) {
+                    // Adaptive video formats usually don't have audio
+                    isVideoOnly = true;
+                }
+
+                const filename = `${title} [${quality}].${ext}`.replace(/[\/\\:*?"<>|]/g, '_');
+
+                detectedItems.push({
+                    url: format.url,
+                    filename: filename,
+                    quality: quality,
+                    ext: ext,
+                    isAudio: isAudio,
+                    isVideoOnly: isVideoOnly,
+                    videoId: videoId
+                });
+
+                // Notify background about this URL
+                this.notifyBackground(format.url, filename);
+            }
+        }
+
+        if (detectedItems.length > 0) {
+            // Sort items: Video+Audio first, then Video Only (descending quality), then Audio
+            detectedItems.sort((a, b) => {
+                if (a.isAudio && !b.isAudio) return 1;
+                if (!a.isAudio && b.isAudio) return -1;
+
+                if (a.isVideoOnly && !b.isVideoOnly) return 1;
+                if (!a.isVideoOnly && b.isVideoOnly) return -1;
+
+                // Parse quality (e.g. 1080p -> 1080)
+                const qA = parseInt(a.quality) || 0;
+                const qB = parseInt(b.quality) || 0;
+                return qB - qA;
+            });
+
+            this.detectedYouTubeVideos.add(videoId);
+            showMediaDownloadPopup(detectedItems);
+        }
+    }
+
+    scanInstagram() {
+        const videos = document.querySelectorAll('video');
+        for (let video of videos) {
+            if (video.src && this.isValidMedia(video)) {
+                this.processUrl(video.src, 'Instagram Video.mp4');
+            }
+        }
+    }
+
+    scanGeneric() {
+        // Scan video and audio tags
+        const elements = document.querySelectorAll('video, audio, object, embed');
+        for (let el of elements) {
+            if (this.isValidMedia(el)) {
+                if (el.src) {
+                    let filename = el.src.split('/').pop().split('?')[0];
+                    if (!filename) filename = 'media';
+                    this.processUrl(el.src, filename);
+                }
+                // Check child source tags
+                const sources = el.querySelectorAll('source');
+                for (let source of sources) {
+                    if (source.src) {
+                        let filename = source.src.split('/').pop().split('?')[0];
+                        if (!filename) filename = 'media';
+                        this.processUrl(source.src, filename);
+                    }
+                }
+            }
+        }
+    }
+
+    scanLinks() {
+        const links = document.getElementsByTagName('a');
+        for (let link of links) {
+            if (link.href && this.commonMediaExtRegex.test(link.href)) {
+                // Only process if it looks like a direct media link
+                let filename = link.download || link.innerText.trim() || link.href.split('/').pop().split('?')[0];
+                this.processUrl(link.href, filename);
+            }
+        }
+    }
+
+    scanImages() {
+        // Sometimes high-res images or specific image types are desirable
+        const images = document.getElementsByTagName('img');
+        for (let img of images) {
+            // Only interested in very large images or specific types if needed
+            // For now, let's just check for direct media links disguised as images? 
+            // Or maybe just large images.
+            // Reference implementation scans images too.
+            if (img.src && this.commonMediaExtRegex.test(img.src)) {
+                let filename = img.alt || img.src.split('/').pop().split('?')[0];
+                this.processUrl(img.src, filename);
+            }
+        }
+    }
+
+    scanIframes() {
+        const iframes = document.getElementsByTagName('iframe');
+        for (let iframe of iframes) {
+            try {
+                if (iframe.src && this.commonMediaExtRegex.test(iframe.src)) {
+                    let filename = iframe.src.split('/').pop().split('?')[0];
+                    this.processUrl(iframe.src, filename);
+                }
+            } catch (e) { }
+        }
+    }
+
+    processUrl(url, filename) {
+        if (!url || url.startsWith('blob:') || url.startsWith('data:')) return;
+
+        // Basic validation to ensure it looks like a URL
+        if (!url.startsWith('http')) return;
+
+        if (this.processedUrls.has(url)) return;
+        this.processedUrls.add(url);
+
+        // Clean filename
+        filename = filename.replace(/[<>:"/\\|?*]/g, '_').trim();
+        if (!filename) filename = 'media_file';
+
+        showMediaDownloadPopup({ url, filename });
+        this.notifyBackground(url, filename);
+    }
+
+    notifyBackground(url, filename) {
         browser.runtime.sendMessage({
-            type: 'initiateSmartDownload',
+            type: "mediaUrlDetected",
             url: url,
             filename: filename
-        }).then(response => {
-            if (response && response.success) {
-                downloadButton.textContent = '✓ URL Sent!';
-                downloadButton.style.background = '#30e60b';
-                console.debug(`[Content Script] Successfully sent URL to background: ${url}`);
-                setTimeout(() => { popup.remove(); activePopupUrls.delete(url); }, 1500);
-            } else {
-                console.error(`[Content Script] Background script reported error for ${url}: ${response.error}`);
-                handleDownloadError(downloadButton, popup, url);
-            }
-        }).catch(error => {
-            console.error(`[Content Script] Error sending message to background for ${url}:`, error);
-            handleDownloadError(downloadButton, popup, url);
-        });
-    });
-}
-
-/**
- * Processes a given HTML element to extract potential media URLs.
- * Sends valid, unique URLs to the background script.
- * @param {Element} element - The HTML element to check.
- */
-const processMediaElement = (element) => {
-  let mediaUrl = '';
-  const tagName = element.tagName;
-
-  if (tagName === 'VIDEO' || tagName === 'AUDIO') {
-    mediaUrl = element.src || element.currentSrc;
-  } else if (tagName === 'IFRAME' || tagName === 'EMBED' || tagName === 'OBJECT') {
-    mediaUrl = element.src || element.data;
-  } else if (tagName === 'SOURCE') {
-    mediaUrl = element.src;
-  }
-
-  if (mediaUrl && !mediaUrl.startsWith('blob:') && !mediaUrl.startsWith('data:') && !processedUrls.has(mediaUrl)) {
-    console.debug("[Content Script] Discovered potential media URL from DOM:", mediaUrl);
-    processedUrls.add(mediaUrl);
-    browser.runtime.sendMessage({ type: "mediaUrlDetected", url: mediaUrl })
-      .catch(error => {
-        console.warn("[Content Script] Failed to send 'mediaUrlDetected' message to background:", error);
-      });
-  }
-};
-
-/**
- * Callback function for MutationObserver.
- * Iterates through added nodes and processes them for media URLs.
- * @param {MutationRecord[]} mutationList - List of mutations observed.
- * @param {MutationObserver} observer - The observer instance.
- */
-const mutationCallback = (mutationList, observer) => {
-  for (const mutation of mutationList) {
-    if (mutation.type === "childList") {
-      mutation.addedNodes.forEach(node => {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          processMediaElement(node);
-          const mediaElementsInSubtree = node.querySelectorAll('video, audio, iframe, embed, source, object');
-          mediaElementsInSubtree.forEach(processMediaElement);
-        }
-      });
+        }).catch(e => { });
     }
-  }
-};
-
-const observer = new MutationObserver(mutationCallback);
-const targetNode = document.body;
-const config = { childList: true, subtree: true };
-
-if (targetNode) {
-    observer.observe(targetNode, config);
-    console.debug("[Content Script] MutationObserver started.");
-} else {
-    console.warn("[Content Script] Document body not found, MutationObserver could not be started.");
 }
 
+// Initialize Detector after settings are loaded
+async function initializeMediaDetector() {
+    // Wait for settings to load first
+    await initializeSettings();
 
-document.querySelectorAll('video, audio, iframe, embed, source, object')
-   .forEach(processMediaElement);
+    console.debug("[Content Script] Settings loaded, initializing Media Detector...");
 
-console.debug("[Content Script] Initial DOM scan complete.");
+    if (document.body) {
+        new MediaDetector();
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            new MediaDetector();
+        });
+    }
 
+    console.debug("[Content Script] Advanced Media Detector loaded.");
+}
+
+// Start initialization
+initializeMediaDetector();
+
+
+// Listen for messages from background
 browser.runtime.onMessage.addListener((message) => {
-    console.debug(`[Content Script] Received message from background: Type = ${message.type}`, message);
-
     if (message.type === "showMediaPopup" && message.mediaItem) {
         showMediaDownloadPopup(message.mediaItem);
     }
-    if (message.type === "stopObserving") {
-        observer.disconnect();
-        console.debug("[Content Script] MutationObserver disconnected as requested by background.");
-    }
     if (message.type === "closeAllPopups") {
-        console.debug("[Content Script] Received closeAllPopups message. Clearing all popups.");
         const allPopups = document.querySelectorAll('.media-detector-popup-item');
-        allPopups.forEach(popup => {
-            popup.remove();
-        });
-        activePopupUrls.clear(); // Clear the set of active URLs
+        allPopups.forEach(popup => popup.remove());
+        activePopupUrls.clear();
     }
 });
-
-console.debug("[Content Script] Media Detector content script loaded.");
