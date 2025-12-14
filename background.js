@@ -4,7 +4,7 @@
 //=================={Nadeko APP Module}========================
 //=============================================================
 
-let nadekoServerPort = 12345;
+let nadekoServerPort = 8080;
 let nadekoBindAddress = "localhost";
 let nadekoApiKey = "";
 let showPopup = false;
@@ -125,6 +125,16 @@ class WebSocketClient {
     this.reconnectInterval = 5000;
     this.reconnectTimer = null;
     this.pingInterval = null;
+    this.updateBadge();
+  }
+
+  updateBadge() {
+    if (this.isConnected) {
+      browser.browserAction.setBadgeText({ text: "" });
+    } else {
+      browser.browserAction.setBadgeText({ text: "X" });
+      browser.browserAction.setBadgeBackgroundColor({ color: "#606060" });
+    }
   }
 
   connect() {
@@ -134,6 +144,7 @@ class WebSocketClient {
 
     if (!nadekoApiKey) {
       console.warn("[WebSocket] No API Key configured. Cannot connect.");
+      this.updateBadge();
       return;
     }
 
@@ -149,7 +160,7 @@ class WebSocketClient {
       this.isConnected = true;
       this.stopReconnect();
       this.startPing();
-      browser.browserAction.setBadgeText({ text: "" });
+      this.updateBadge();
     };
 
     this.ws.onclose = () => {
@@ -157,8 +168,7 @@ class WebSocketClient {
       this.isConnected = false;
       this.stopPing();
       this.startReconnect();
-      browser.browserAction.setBadgeText({ text: "X" });
-      browser.browserAction.setBadgeBackgroundColor({ color: "#606060" });
+      this.updateBadge();
     };
 
     this.ws.onerror = (error) => {
