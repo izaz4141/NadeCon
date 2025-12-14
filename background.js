@@ -271,6 +271,24 @@ async function initConfig() {
 initConfig();
 
 /**
+ * Retrieves cookies for a given URL and formats them as a string.
+ * @param {string} url - The URL to get cookies for.
+ * @returns {Promise<string>} - The formatted cookie string (key=value; key2=value2).
+ */
+async function getCookiesForUrl(url) {
+  try {
+    const cookies = await browser.cookies.getAll({ url: url });
+    if (!cookies || cookies.length === 0) {
+      return "";
+    }
+    return cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+  } catch (error) {
+    console.error(`[Background Script] Error getting cookies for ${url}:`, error);
+    return "";
+  }
+}
+
+/**
  * Sends a given URL and an optional filename to the local Nadeko Downloader application via WebSocket.
  */
 async function sendUrlToApp(url, filename = null) {
@@ -282,6 +300,8 @@ async function sendUrlToApp(url, filename = null) {
     }
   }
 
+  const cookie = await getCookiesForUrl(url);
+
   console.debug(
     `[Background Script] Sending URL to Nadeko App: ${url} (Filename: ${filename})`
   );
@@ -290,6 +310,7 @@ async function sendUrlToApp(url, filename = null) {
     type: "download",
     url: url,
     filename: filename,
+    cookie: cookie,
     user_agent: navigator.userAgent,
   });
 

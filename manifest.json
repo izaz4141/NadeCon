@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "NadeCon",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "author": "Glicole",
   "description": "Detects media from pages and connects to Nadeko Downloader",
   "icons": {
@@ -15,6 +15,7 @@
     "webRequest",
     "webRequestBlocking",
     "contextMenus",
+    "cookies",
     "*://localhost/*",
     "<all_urls>"
   ],
