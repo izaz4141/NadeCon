@@ -39,7 +39,9 @@
     box-sizing: border-box;
     overflow: visible;
     height: auto;
-    position: relative;
+    height: auto;
+    position: relative; /* Default for container, overridden to absolute in JS if element found */
+    z-index: 10000; /* Ensure it's on top */
 }
 
 .media-detector-popup-item.show {

@@ -98,7 +98,7 @@ function showMediaDownloadPopup(mediaItem) {
     // If it's an array, it's a menu (YouTube)
     const isMenu = Array.isArray(mediaItem);
     const mainItem = isMenu ? mediaItem[0] : mediaItem;
-    const { url, filename } = mainItem;
+    const { url, filename, element } = mainItem;
 
     // Unique key for the popup (use video ID for menu, or URL for single)
     const popupKey = isMenu ? (mainItem.videoId || url) : url;
@@ -109,92 +109,127 @@ function showMediaDownloadPopup(mediaItem) {
         return; // Respect user setting
     }
 
-    const popup = document.createElement('div');
-    popup.className = 'media-detector-popup-item';
-
-    let icon = '🎬';
-    let titleText = isMenu ? 'Select Quality' : (filename.length > 20 ? filename.substring(0, 20) + '...' : filename);
-    let buttonText = isMenu ? 'Options ▾' : 'Download';
-
-    popup.innerHTML = `
-        <div class="popup-icon">${icon}</div>
-        <div class="popup-content">
-            <p title="${isMenu ? 'Multiple formats available' : filename}">${titleText}</p>
-            <button class="download-btn">${buttonText}</button>
-        </div>
-        <button class="close-btn">✕</button>
-    `;
-
-    if (isMenu) {
-        const menu = document.createElement('div');
-        menu.className = 'media-detector-menu';
-
-        mediaItem.forEach(item => {
-            const menuItem = document.createElement('div');
-            menuItem.className = 'media-detector-menu-item';
-
-            let quality = item.quality || 'Unknown';
-            let extraInfo = '';
-            if (item.isAudio) {
-                quality = 'Audio';
-                extraInfo = item.ext || 'm4a';
-            } else if (item.isVideoOnly) {
-                extraInfo = 'Video Only';
-            } else {
-                extraInfo = item.ext || 'mp4';
-            }
-
-            menuItem.innerHTML = `
-                <span>${item.filename}</span>
-                <div style="display:flex; align-items:center;">
-                    <span class="format-info">${extraInfo}</span>
-                    <span class="quality-tag" style="margin-left:6px;">${quality}</span>
-                </div>
-            `;
-
-            menuItem.addEventListener('click', (e) => {
-                e.stopPropagation();
-                initiateDownload(item.url, item.filename, popup.querySelector('.download-btn'), popup);
-            });
-
-            menu.appendChild(menuItem);
-        });
-
-        popup.appendChild(menu);
-
-        const btn = popup.querySelector('.download-btn');
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            menu.classList.toggle('show');
-            btn.textContent = menu.classList.contains('show') ? 'Close ▴' : 'Options ▾';
-        });
-
-        // Close menu when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!popup.contains(e.target)) {
-                menu.classList.remove('show');
-                btn.textContent = 'Options ▾';
-            }
-        });
-
-    } else {
-        const downloadButton = popup.querySelector('.download-btn');
-        downloadButton.addEventListener('click', () => {
-            initiateDownload(url, filename, downloadButton, popup);
-        });
+    // Requirement: If no element or position can't be detected, don't show
+    if (!element || !element.getBoundingClientRect) {
+        console.debug(`[Content Script] Popup skipped: No element detected for ${filename}`);
+        return;
     }
 
-    popupContainer.appendChild(popup);
+    // Mark as active immediately to prevent duplicates
     activePopupUrls.add(popupKey);
 
-    setTimeout(() => {
-        if (popup.isConnected) popup.classList.add('show');
-    }, 50);
+    const renderPopup = () => {
+        const popup = document.createElement('div');
+        popup.className = 'media-detector-popup-item';
 
-    popup.querySelector('.close-btn').addEventListener('click', () => {
-        popup.remove();
-        activePopupUrls.delete(popupKey);
-    });
+        let icon = '🎬';
+        let titleText = isMenu ? 'Select Quality' : (filename.length > 20 ? filename.substring(0, 20) + '...' : filename);
+        let buttonText = isMenu ? 'Options ▾' : 'Download';
+
+        popup.innerHTML = `
+            <div class="popup-icon">${icon}</div>
+            <div class="popup-content">
+                <p title="${isMenu ? 'Multiple formats available' : filename}">${titleText}</p>
+                <button class="download-btn">${buttonText}</button>
+            </div>
+            <button class="close-btn">✕</button>
+        `;
+
+        if (isMenu) {
+            const menu = document.createElement('div');
+            menu.className = 'media-detector-menu';
+
+            mediaItem.forEach(item => {
+                const menuItem = document.createElement('div');
+                menuItem.className = 'media-detector-menu-item';
+
+                let quality = item.quality || 'Unknown';
+                let extraInfo = '';
+                if (item.isAudio) {
+                    quality = 'Audio';
+                    extraInfo = item.ext || 'm4a';
+                } else if (item.isVideoOnly) {
+                    extraInfo = 'Video Only';
+                } else {
+                    extraInfo = item.ext || 'mp4';
+                }
+
+                menuItem.innerHTML = `
+                    <span>${item.filename}</span>
+                    <div style="display:flex; align-items:center;">
+                        <span class="format-info">${extraInfo}</span>
+                        <span class="quality-tag" style="margin-left:6px;">${quality}</span>
+                    </div>
+                `;
+
+                menuItem.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    initiateDownload(item.url, item.filename, popup.querySelector('.download-btn'), popup);
+                });
+
+                menu.appendChild(menuItem);
+            });
+
+            popup.appendChild(menu);
+
+            const btn = popup.querySelector('.download-btn');
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menu.classList.toggle('show');
+                btn.textContent = menu.classList.contains('show') ? 'Close ▴' : 'Options ▾';
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!popup.contains(e.target)) {
+                    menu.classList.remove('show');
+                    btn.textContent = 'Options ▾';
+                }
+            });
+
+        } else {
+            const downloadButton = popup.querySelector('.download-btn');
+            downloadButton.addEventListener('click', () => {
+                initiateDownload(url, filename, downloadButton, popup);
+            });
+        }
+
+        // Position logic
+        const rect = element.getBoundingClientRect();
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+
+        // Position near top-left of the element
+        const top = rect.top + scrollTop + 10;
+        const left = rect.left + scrollLeft + 10;
+
+        popup.style.position = 'absolute';
+        popup.style.top = `${top}px`;
+        popup.style.left = `${left}px`;
+        popup.style.bottom = 'auto'; // Override default
+
+        // Append directly to body for absolute positioning to work relative to document
+        document.body.appendChild(popup);
+
+        setTimeout(() => {
+            if (popup.isConnected) popup.classList.add('show');
+        }, 50);
+
+        popup.querySelector('.close-btn').addEventListener('click', () => {
+            popup.remove();
+            activePopupUrls.delete(popupKey);
+        });
+    };
+
+    // Use IntersectionObserver to show only when visible
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+            renderPopup();
+            observer.disconnect();
+        }
+    }, { threshold: 0.01 }); // Trigger as soon as 1% is visible
+
+    observer.observe(element);
 }
 
 //=============================================================
@@ -371,6 +406,9 @@ class MediaDetector {
 
         if (this.detectedYouTubeVideos.has(videoId)) return;
 
+        // Try to find the video element
+        const videoElement = document.querySelector('video') || document.querySelector('.html5-video-player');
+
         const title = videoDetails.title || 'YouTube Video';
         const formats = data.streamingData.formats || [];
         const adaptiveFormats = data.streamingData.adaptiveFormats || [];
@@ -408,7 +446,8 @@ class MediaDetector {
                     ext: ext,
                     isAudio: isAudio,
                     isVideoOnly: isVideoOnly,
-                    videoId: videoId
+                    videoId: videoId,
+                    element: videoElement
                 });
 
                 // Notify background about this URL
@@ -440,7 +479,7 @@ class MediaDetector {
         const videos = document.querySelectorAll('video');
         for (let video of videos) {
             if (video.src && this.isValidMedia(video)) {
-                this.processUrl(video.src, 'Instagram Video.mp4');
+                this.processUrl(video.src, 'Instagram Video.mp4', video);
             }
         }
     }
@@ -453,7 +492,7 @@ class MediaDetector {
                 if (el.src) {
                     let filename = el.src.split('/').pop().split('?')[0];
                     if (!filename) filename = 'media';
-                    this.processUrl(el.src, filename);
+                    this.processUrl(el.src, filename, el);
                 }
                 // Check child source tags
                 const sources = el.querySelectorAll('source');
@@ -461,7 +500,7 @@ class MediaDetector {
                     if (source.src) {
                         let filename = source.src.split('/').pop().split('?')[0];
                         if (!filename) filename = 'media';
-                        this.processUrl(source.src, filename);
+                        this.processUrl(source.src, filename, el);
                     }
                 }
             }
@@ -474,7 +513,7 @@ class MediaDetector {
             if (link.href && this.commonMediaExtRegex.test(link.href)) {
                 // Only process if it looks like a direct media link
                 let filename = link.download || link.innerText.trim() || link.href.split('/').pop().split('?')[0];
-                this.processUrl(link.href, filename);
+                this.processUrl(link.href, filename, link);
             }
         }
     }
@@ -489,7 +528,7 @@ class MediaDetector {
             // Reference implementation scans images too.
             if (img.src && this.commonMediaExtRegex.test(img.src)) {
                 let filename = img.alt || img.src.split('/').pop().split('?')[0];
-                this.processUrl(img.src, filename);
+                this.processUrl(img.src, filename, img);
             }
         }
     }
@@ -500,13 +539,13 @@ class MediaDetector {
             try {
                 if (iframe.src && this.commonMediaExtRegex.test(iframe.src)) {
                     let filename = iframe.src.split('/').pop().split('?')[0];
-                    this.processUrl(iframe.src, filename);
+                    this.processUrl(iframe.src, filename, iframe);
                 }
             } catch (e) { }
         }
     }
 
-    processUrl(url, filename) {
+    processUrl(url, filename, element = null) {
         if (!url || url.startsWith('blob:') || url.startsWith('data:')) return;
 
         // Basic validation to ensure it looks like a URL
@@ -519,7 +558,7 @@ class MediaDetector {
         filename = filename.replace(/[<>:"/\\|?*]/g, '_').trim();
         if (!filename) filename = 'media_file';
 
-        showMediaDownloadPopup({ url, filename });
+        showMediaDownloadPopup({ url, filename, element });
         this.notifyBackground(url, filename);
     }
 
@@ -554,10 +593,60 @@ async function initializeMediaDetector() {
 initializeMediaDetector();
 
 
+// Helper to find a DOM element matching a URL
+function findMediaElementByUrl(url) {
+    if (!url) return null;
+    const searchUrl = url.trim();
+
+    // 1. Check video and audio elements
+    const mediaElements = document.querySelectorAll('video, audio, object, embed');
+    for (let el of mediaElements) {
+        // Check src
+        if (el.src && (el.src === searchUrl || el.src.includes(searchUrl))) return el;
+        if (el.currentSrc && (el.currentSrc === searchUrl || el.currentSrc.includes(searchUrl))) return el;
+
+        // Check source children
+        const sources = el.querySelectorAll('source');
+        for (let source of sources) {
+            if (source.src && (source.src === searchUrl || source.src.includes(searchUrl))) return el;
+        }
+    }
+
+    // 2. Check images
+    const images = document.querySelectorAll('img');
+    for (let img of images) {
+        if (img.src && (img.src === searchUrl || img.src.includes(searchUrl))) return img;
+    }
+
+    // 3. Check iframes
+    const iframes = document.querySelectorAll('iframe');
+    for (let iframe of iframes) {
+        try {
+            if (iframe.src && (iframe.src === searchUrl || iframe.src.includes(searchUrl))) return iframe;
+        } catch (e) { }
+    }
+
+    // 4. Fallback: If we have a video on page and it's the only one, assume it matches
+    // This is risky but helpful for blob URLs where the network request was m3u8
+    const videos = document.querySelectorAll('video');
+    if (videos.length === 1) {
+        return videos[0];
+    }
+
+    return null;
+}
+
 // Listen for messages from background
 browser.runtime.onMessage.addListener((message) => {
     if (message.type === "showMediaPopup" && message.mediaItem) {
-        showMediaDownloadPopup(message.mediaItem);
+        const item = message.mediaItem;
+
+        // Try to find the element if not provided
+        if (!item.element) {
+            item.element = findMediaElementByUrl(item.url);
+        }
+
+        showMediaDownloadPopup(item);
     }
     if (message.type === "closeAllPopups") {
         const allPopups = document.querySelectorAll('.media-detector-popup-item');
