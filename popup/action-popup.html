@@ -46,6 +46,7 @@
             display: -webkit-box;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             white-space: normal;
         }
     </style>
@@ -54,13 +55,24 @@
 <body class="p-2 text-gray-200">
     <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-700">
         <h1 class="text-xl font-bold text-gray-100">NadeCon</h1>
-        <button id="clearUrlsBtn"
-            class="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md shadow-sm text-sm transition duration-150 ease-in-out">
-            Clear
+        <button id="clearUrlsBtn" title="Clear Media URLs"
+            class="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md shadow-sm text-sm transition duration-150 ease-in-out flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                viewBox="0 0 24 24"><!-- Icon from Material Symbols by Google - https://github.com/google/material-design-icons/blob/master/LICENSE -->
+                <path fill="currentColor" d="M3 17v-2h14v2zm2-4v-2h14v2zm2-4V7h14v2z" />
+            </svg>
         </button>
     </div>
 
-    <p id="noUrlsMessage" class="text-gray-400 text-center py-4">No media URLs found yet. Browse some pages!</p>
+    <div id="noUrlsMessage" title="No media URLs found"
+        class="text-gray-400 text-center py-4 flex flex-col items-center justify-center space-y-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"
+            viewBox="0 0 24 24"><!-- Icon from Material Symbols Light by Google - https://github.com/google/material-design-icons/blob/master/LICENSE -->
+            <path fill="currentColor"
+                d="M19.833 21.26L17.573 19H6.615q-.69 0-1.153-.462T5 17.384v-2.423h1v2.423q0 .231.192.424t.423.192h9.958l-3.498-3.498L12 15.577l-3.538-3.538l.517-.518l1.73 1.731v-1.115l-7.968-7.97l.713-.713l17.092 17.092zm-4.908-8.8l-.713-.714l.619-.619l.708.72zM12.5 9.688l-1-1V5h1zm6.5 6.846l-1-1v-.572h1z" />
+        </svg>
+        <p class="text-xs">No media URLs found yet. Browse some pages!</p>
+    </div>
 
     <div id="urlList" class="space-y-3">
         <!-- Scraped URLs will be dynamically inserted here -->

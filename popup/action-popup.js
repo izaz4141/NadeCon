@@ -58,15 +58,92 @@ function addUrlToPopup(mediaItem) {
         }
     }
 
+    /**
+     * Returns an SVG icon string based on the filename extension.
+     * @param {string} filename - The filename to check.
+     * @returns {string} - The SVG icon string.
+     */
+    function getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+
+        // Video
+        if (['mp4', 'mkv', 'webm', 'avi', 'mov', 'flv', 'wmv', 'm4v', '3gp', 'ts', 'm3u8', 'mpd'].includes(ext)) {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400 flex-shrink-0 mr-1"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>`;
+        }
+
+        // Audio
+        if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma'].includes(ext)) {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400 flex-shrink-0 mr-1"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+        }
+
+        // Image
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff'].includes(ext)) {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400 flex-shrink-0 mr-1"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+        }
+
+        // Archive
+        if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'iso'].includes(ext)) {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-400 flex-shrink-0 mr-1"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`;
+        }
+
+        // Default File
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 flex-shrink-0 mr-1"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+    }
+
     const urlItem = document.createElement('div');
-    urlItem.className = 'bg-gray-700 p-3 rounded-lg shadow-sm flex items-center justify-between text-sm break-all text-gray-200 border border-gray-600';
+    urlItem.className = 'bg-gray-700 p-1 rounded-lg shadow-sm flex items-center justify-between text-xs break-all text-gray-200 border border-gray-600';
     urlItem.innerHTML = `
-        <div class="flex-grow pr-2">
-            <span class="url-item-text block line-clamp-2" data-original-url="${url}">${filename}</span>
+        <div class="flex-grow pr-2 flex items-center">
+            ${getFileIcon(filename)}
+            <span title="${filename}"
+            class="url-item-text block line-clamp-2" data-original-url="${url}">
+                ${filename}
+            </span>
         </div>
         <div class="flex-shrink-0 flex space-x-2">
-            <button class="copy-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out">Copy</button>
-            <button class="download-btn bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out">Download</button>
+            <button title="Copy URL"
+            class="copy-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
+                viewBox="0 0 24 24"><!-- Icon from Material Symbols by Google - https://github.com/google/material-design-icons/blob/master/LICENSE -->
+                    <path fill="currentColor" 
+                    d="M9 18q-.825 0-1.412-.587T7 16V4q0-.825.588-1.412T9 2h9q.825 0 1.413.588T20 4v12q0 .825-.587 1.413T18 18zm-4 4q-.825 0-1.412-.587T3 20V6h2v14h11v2z"/>
+                </svg>
+            </button>
+            <button title="Download"
+            class="download-btn bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
+                viewBox="0 0 24 24"><!-- Icon from Material Line Icons by Vjacheslav Trushkin - https://github.com/cyberalien/line-md/blob/master/license.txt -->
+                    <mask id="SVGlr8ECcZP">
+                        <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                            <path stroke-dasharray="64" stroke-dashoffset="64" d="M7 19h11c2.21 0 4 -1.79 4 -4c0 -2.21 -1.79 -4 -4 -4h-1v-1c0 -2.76 -2.24 -5 -5 -5c-2.42 0 -4.44 1.72 -4.9 4h-0.1c-2.76 0 -5 2.24 -5 5c0 2.76 2.24 5 5 5Z">
+                                <animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="64;0"/>
+                                <set fill="freeze" attributeName="opacity" begin="0.7s" to="0"/>
+                            </path>
+                            <g fill="#fff" stroke="none" opacity="0">
+                                <circle cx="12" cy="10" r="6"/><rect width="9" height="8" x="8" y="12"/>
+                                <rect width="15" height="12" x="1" y="8" rx="6"/>
+                                <rect width="13" height="10" x="10" y="10" rx="5"/>
+                                <set fill="freeze" attributeName="opacity" begin="0.7s" to="1"/>
+                            </g>
+                            <g fill="#000" fill-opacity="0" stroke="none">
+                                <circle cx="12" cy="10" r="4"/><rect width="9" height="6" x="8" y="12"/>
+                                <rect width="11" height="8" x="3" y="10" rx="4"/>
+                                <rect width="9" height="6" x="12" y="12" rx="3"/>
+                                <set fill="freeze" attributeName="fill-opacity" begin="0.7s" to="1"/>
+                                <animate fill="freeze" attributeName="opacity" begin="0.7s" dur="0.15s" values="1;0.7"/>
+                            </g>
+                            <g fill="#fff" stroke="none">
+                                <path d="M10.5 10h3v0h-3z"><animate fill="freeze" attributeName="d" begin="0.95s" dur="0.2s" values="M10.5 10h3v0h-3z;M10.5 10h3v4h-3z"/>
+                                </path>
+                                <path d="M8 13h8l-4 0z">
+                                    <animate fill="freeze" attributeName="d" begin="1.15s" dur="0.1s" values="M8 13h8l-4 0z;M8 13h8l-4 4z"/>
+                                </path>
+                            </g>
+                        </g>
+                    </mask>
+                    <rect width="24" height="24" fill="currentColor" mask="url(#SVGlr8ECcZP)"/>
+                </svg>
+            </button>
         </div>
     `;
 
@@ -234,10 +311,10 @@ configBtn.addEventListener('click', () => {
     browser.windows.create({
         url: browser.runtime.getURL("config/config.html"),
         type: "popup", // Opens as a small, floating window
-        width: 450, // Adjust size as needed
-        height: 350,
-        left: 100, // Optional: position it
-        top: 100
+        width: 350, // Adjust size as needed
+        height: 450,
+        left: window.screen.availWidth - 350,
+        top: 10
     }).catch(error => {
         console.error("[Popup] Failed to open config window:", error);
         showMessageBox("Failed to open configuration window.", "error");
