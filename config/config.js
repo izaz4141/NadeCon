@@ -10,8 +10,8 @@ const statusMessage = document.getElementById('statusMessage');
 const portError = document.getElementById('portError');
 
 const DEFAULT_BIND_ADDRESS = 'localhost';
-const DEFAULT_PORT = 12345;
-const DEFAULT_SHOW = true;
+const DEFAULT_PORT = 8080;
+const DEFAULT_SHOW = false;
 const DEFAULT_API_KEY = "";
 
 /**
