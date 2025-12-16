@@ -16,6 +16,7 @@
     "webRequestBlocking",
     "contextMenus",
     "cookies",
+    "privacy",
     "*://localhost/*",
     "<all_urls>"
   ],

@@ -8,6 +8,7 @@ let nadekoServerPort = 8080;
 let nadekoBindAddress = "localhost";
 let nadekoApiKey = "";
 let showPopup = false;
+let firstPartyIsolateEnabled = false;
 
 const CONTENT_TYPE_EXTENSIONS = {
   "text/html": "HTML|HTM",
@@ -138,52 +139,57 @@ class WebSocketClient {
   }
 
   connect() {
-    if (this.ws) {
-      this.ws.close();
-    }
-
-    if (!nadekoApiKey) {
-      console.warn("[WebSocket] No API Key configured. Cannot connect.");
-      this.updateBadge();
-      return;
-    }
-
-    const url = `ws://${nadekoBindAddress}:${nadekoServerPort}/ws?key=${encodeURIComponent(
-      nadekoApiKey
-    )}`;
-    console.debug(`[WebSocket] Connecting to ${url}...`);
-
-    this.ws = new WebSocket(url);
-
-    this.ws.onopen = () => {
-      console.debug("[WebSocket] Connected");
-      this.isConnected = true;
-      this.stopReconnect();
-      this.startPing();
-      this.updateBadge();
-    };
-
-    this.ws.onclose = () => {
-      console.debug("[WebSocket] Disconnected");
-      this.isConnected = false;
-      this.stopPing();
-      this.startReconnect();
-      this.updateBadge();
-    };
-
-    this.ws.onerror = (error) => {
-      console.error("[WebSocket] Error:", error);
-      this.ws.close();
-    };
-
-    this.ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        this.handleMessage(msg);
-      } catch (e) {
-        console.error("[WebSocket] Failed to parse message:", e);
+    return new Promise((resolve) => {
+      if (this.ws) {
+        this.ws.close();
       }
-    };
+
+      if (!nadekoApiKey) {
+        console.warn("[WebSocket] No API Key configured. Cannot connect.");
+        this.updateBadge();
+        resolve(false);
+        return;
+      }
+
+      const url = `ws://${nadekoBindAddress}:${nadekoServerPort}/ws?key=${encodeURIComponent(
+        nadekoApiKey
+      )}`;
+      console.debug(`[WebSocket] Connecting to ${url}...`);
+
+      this.ws = new WebSocket(url);
+
+      this.ws.onopen = () => {
+        console.debug("[WebSocket] Connected");
+        this.isConnected = true;
+        this.stopReconnect();
+        this.startPing();
+        this.updateBadge();
+        resolve(true);
+      };
+
+      this.ws.onclose = () => {
+        console.debug("[WebSocket] Disconnected");
+        this.isConnected = false;
+        this.stopPing();
+        this.startReconnect();
+        this.updateBadge();
+      };
+
+      this.ws.onerror = (error) => {
+        console.error("[WebSocket] Error:", error);
+        this.ws.close();
+        resolve(false);
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          this.handleMessage(msg);
+        } catch (e) {
+          console.error("[WebSocket] Failed to parse message:", e);
+        }
+      };
+    });
   }
 
   handleMessage(msg) {
@@ -262,6 +268,12 @@ async function initConfig() {
     if (nadekoApiKey) {
       wsClient.connect();
     }
+
+    if (browser.privacy && browser.privacy.websites && browser.privacy.websites.firstPartyIsolate) {
+      const setting = await browser.privacy.websites.firstPartyIsolate.get({});
+      firstPartyIsolateEnabled = setting.value;
+      console.debug(`[Background Script] First Party Isolate: ${firstPartyIsolateEnabled}`);
+    }
   } catch (error) {
     console.error("[Background Script] Error initializing config:", error);
   }
@@ -275,13 +287,20 @@ initConfig();
  * @param {string} url - The URL to get cookies for.
  * @returns {Promise<string>} - The formatted cookie string (key=value; key2=value2).
  */
-async function getCookiesForUrl(url) {
+async function getCookiesForUrl(url, storeId = null) {
   try {
-    const cookies = await browser.cookies.getAll({ url: url });
+    const details = { url: url };
+    if (storeId) {
+      details.storeId = storeId;
+    }
+    if (firstPartyIsolateEnabled) {
+      details.firstPartyDomain = null;
+    }
+    const cookies = await browser.cookies.getAll(details);
     if (!cookies || cookies.length === 0) {
       return "";
     }
-    return cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+    return cookies.map((c) => `${c.name}=${c.value}`).join(";");
   } catch (error) {
     console.error(`[Background Script] Error getting cookies for ${url}:`, error);
     return "";
@@ -291,7 +310,7 @@ async function getCookiesForUrl(url) {
 /**
  * Sends a given URL and an optional filename to the local Nadeko Downloader application via WebSocket.
  */
-async function sendUrlToApp(url, filename = null) {
+async function sendUrlToApp(url, filename = null, referer = null, cookieStoreId = null) {
   if (!wsClient.isConnected) {
     // Try to connect if not connected
     await initConfig();
@@ -300,7 +319,7 @@ async function sendUrlToApp(url, filename = null) {
     }
   }
 
-  const cookie = await getCookiesForUrl(url);
+  const cookie = await getCookiesForUrl(url, cookieStoreId);
 
   console.debug(
     `[Background Script] Sending URL to Nadeko App: ${url} (Filename: ${filename})`
@@ -312,6 +331,7 @@ async function sendUrlToApp(url, filename = null) {
     filename: filename,
     cookie: cookie,
     user_agent: navigator.userAgent,
+    referer: referer,
   });
 
   if (!success) {
@@ -323,6 +343,13 @@ async function sendUrlToApp(url, filename = null) {
  * Checks if the local application is alive (connected via WebSocket).
  */
 async function isLocalhostAlive(forceCheck = false) {
+  if (forceCheck) {
+    if (wsClient.isConnected) {
+      wsClient.send({ type: "ping" });
+    } else {
+      await wsClient.connect();
+    }
+  }
   return wsClient.isConnected;
 }
 
@@ -341,7 +368,7 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
       console.debug(
         `[Background Script] Context menu clicked. Sending URL: ${urlToSend}`
       );
-      sendUrlToApp(urlToSend).catch((error) => {
+      sendUrlToApp(urlToSend, null, info.pageUrl, tab ? tab.cookieStoreId : null).catch((error) => {
         console.error(
           `[Background Script] Failed to send URL ${urlToSend} via context menu:`,
           error
@@ -639,6 +666,7 @@ class RequestInfo {
     this.redirectChain = [];
     this.intercepted = false;
     this.ip = null;
+    this.referer = null;
   }
 
   getFinalUrl() {
@@ -1182,10 +1210,28 @@ browser.webRequest.onBeforeRedirect.addListener(
   }
 );
 
+// --- WebRequest Listener for tracking request headers (Referer) ---
+browser.webRequest.onSendHeaders.addListener(
+  (details) => {
+    const request = downloadRequests.get(details.requestId);
+    if (request) {
+      for (const h of details.requestHeaders) {
+        if (h.name.toLowerCase() === "referer") {
+          request.referer = h.value;
+          break;
+        }
+      }
+    }
+  },
+  { urls: ["<all_urls>"] },
+  ["requestHeaders"]
+);
+
 // --- WebRequest Listener for intercepting downloads (Headers Received) ---
 browser.webRequest.onHeadersReceived.addListener(
   (details) => {
     if (!wsClient.isConnected) return { cancel: false };
+
     const requestId = details.requestId;
     let request = downloadRequests.get(requestId);
     if (!request) {
@@ -1227,7 +1273,9 @@ browser.webRequest.onHeadersReceived.addListener(
             contentDisposition,
             details.tabId,
             request.method,
-            request.requestBody
+            request.requestBody,
+            request.referer,
+            details.cookieStoreId
           ),
         0
       );
@@ -1284,6 +1332,8 @@ async function handleInterceptedDownload(
   tabId,
   method = "GET",
   requestBody = null,
+  referer = null,
+  cookieStoreId = null,
   retryCount = 0
 ) {
   console.debug(`[Download Intercept] Handling intercepted download: ${url}`);
@@ -1315,7 +1365,7 @@ async function handleInterceptedDownload(
         }
       }
 
-      await sendUrlToApp(url, filename);
+      await sendUrlToApp(url, filename, referer, cookieStoreId);
 
       // Notify popup/UI of successful interception
       browser.runtime
@@ -1347,6 +1397,8 @@ async function handleInterceptedDownload(
             tabId,
             method,
             requestBody,
+            referer,
+            cookieStoreId,
             retryCount + 1
           );
         }, retryDelay);
@@ -1436,7 +1488,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       url,
       "application/octet-stream",
       `attachment; filename="${filename}"`,
-      tabId
+      tabId,
+      "GET",
+      null,
+      null
     )
       .then(() => {
         sendResponse({
