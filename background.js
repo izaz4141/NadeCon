@@ -1341,6 +1341,17 @@ async function handleInterceptedDownload(
   const filename = deriveFilename(url, contentType, contentDisposition);
 
   if (isAlive) {
+    if (tabId >= 0) {
+      try {
+        const tab = await browser.tabs.get(tabId);
+        if (tab && tab.url) {
+          referer = tab.url;
+        }
+      } catch (e) {
+        console.warn(`[Download Intercept] Failed to get tab URL for referer: ${e}`);
+      }
+    }
+
     console.debug(
       `[Download Intercept] Nadeko App is connected. Sending to Nadeko: ${url} as ${filename}`
     );
