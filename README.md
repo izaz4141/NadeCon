@@ -3,11 +3,14 @@
   NadeCon
   <br>
 </h1>
+
 <div align="center">
   <a  href="https://github.com/izaz4141/NadeCon">
     <img src="icons/nadecon-115.png" alt="NadeCon" width="200">
   </a>
-### A Firefox extension that detects media on webpages and connects to [Nadeko~don](https://github.com/izaz4141/nadekodon-rs)
+  <h4>
+    A Firefox extension that detects media on webpages and connects to <a href="https://github.com/izaz4141/nadekodon-rs" target="_blank" rel="noopener noreferrer">Nadeko~don</a>
+  </h4>
 </div>
 
 ## Features
