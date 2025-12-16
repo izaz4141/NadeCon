@@ -1,10 +1,14 @@
-# Video Downloader Connector Extension 
+<h1 align="center">
+  <br>
+    <a href="https://github.com/izaz4141/NadeCon"><img src="https://github.com/izaz4141/NadeCon/blob/main/icons/nadecon-115.png?raw=true" alt="NadeCon" width="115"></a>
+  <br>
+  NadeCon
+  <br>
+</h1>
 
-![Extension Icon](icons/nadecon-96.png)
-
-A Firefox extension that detects media on webpages and sends it to [**Nadeko~don**](https://github.com/izaz4141/Nadeko-don) for downloading.
-
-
+<h4 align="center">
+  A Firefox extension that detects media on webpages and connects to <a href="https://github.com/izaz4141/nadekodon-rs" target="_blank">**Nadeko~don**</a>.
+</h4>
 
 ## Features
 
@@ -13,19 +17,16 @@ A Firefox extension that detects media on webpages and sends it to [**Nadeko~don
 
 ## Requirements
 
-1. [**Nadeko~don**](https://github.com/izaz4141/Nadeko-don)
-2. Firefox browser (version 91+ recommended)
+1. [**Nadeko~don**](https://github.com/izaz4141/nadekodon-rs)
+2. Firefox-based browser (version 142+ recommended)
 
 
 ## Usage
 
-1. Ensure [**Nadeko~don**](https://github.com/izaz4141/Nadeko-don) is running
+1. Ensure [**Nadeko~don**](https://github.com/izaz4141/nadekodon-rs) is running
 2. Browse to any webpage with media content
 3. Click the extension icon in Firefox's toolbar or popup
-4. The desktop application will automatically:
-    - Fetch video information
-    - Display thumbnail and format options
-    - Prepare for download
+4. Click the "Configuration" button and set up the extension to use the Nadeko~don port along with your API keys
     
 ## Installation
 
