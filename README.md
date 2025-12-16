@@ -39,7 +39,9 @@ A Firefox extension that detects media on webpages and sends it to [**Nadeko~don
 
 ### Package from Source
 1. Clone this repository
-2. Package to xpi with `zip -1 -r NadeCon.xpi * -x@xpi.ignore`
+2. Package to xpi:
+    - **Not Minified**: `zip -1 -r NadeCon.xpi * -x@xpi.ignore`
+    - **Minified**: `npm run build`
 3. Go to [about:config](about:config)
 4. Turn `xpinstall.signatures.required` off ( sorry no verification yet )
 5. Go to [**Manage your Extension**](about:addons)
@@ -48,20 +50,15 @@ A Firefox extension that detects media on webpages and sends it to [**Nadeko~don
 
 ## Planned Features
 
-1. Window in add-on to show media
-2. Window in add-on to select quality and download media
-3. Window in add-on to configure port, turnoff popup
+1. ~~Window in add-on to show media~~
+2. ~~Window in add-on to select quality and download media~~
+3. ~~Window in add-on to configure port, turnoff popup~~
 
 ## Troubleshooting
 1. "Error sending URL" in browser console:
     - Ensure desktop application is running
-    - Check firewall allows connections on port `12345`
+    - Check firewall allows connections on selected port (default is 8080)
     - Verify application didn't crash on startup
 2. No media detected:
     - Some sites use iframes or custom players
-    - Extension falls back to page URL
     - Manually copy-paste URL into application as alternative
-3. Thumbnail not loading:
-    - Some videos might not have thumbnails
-    - Check internet connection
-    - Verify no ad-blockers are blocking thumbnail domains
