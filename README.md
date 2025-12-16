@@ -7,7 +7,7 @@
 </h1>
 
 <h4 align="center">
-  A Firefox extension that detects media on webpages and connects to <a href="https://github.com/izaz4141/nadekodon-rs" target="_blank">**Nadeko~don**</a>.
+  A Firefox extension that detects media on webpages and connects to <a href="https://github.com/izaz4141/nadekodon-rs" target="_blank">Nadeko~don</a>.
 </h4>
 
 ## Features
