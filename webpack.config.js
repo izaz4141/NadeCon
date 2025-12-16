@@ -19,7 +19,13 @@ module.exports = {
         new CopyWebpackPlugin({
             patterns: [
                 { from: 'manifest.json', to: '.' },
-                { from: 'icons', to: 'icons' },
+                {
+                    from: 'icons',
+                    to: 'icons',
+                    globOptions: {
+                        ignore: ['**/nadecon-115.png']
+                    }
+                },
                 { from: 'LICENSE', to: '.' },
                 { from: 'README.md', to: '.' },
                 {
