@@ -1,6 +1,8 @@
-<a align="center" href="https://github.com/izaz4141/NadeCon">
-  <img src="https://github.com/izaz4141/NadeCon/blob/main/icons/nadecon-115.png?raw=true" alt="NadeCon" width="115">
-</a>
+<div align="center">
+  <a  href="https://github.com/izaz4141/NadeCon">
+    <img src="https://github.com/izaz4141/NadeCon/blob/main/icons/nadecon-115.png?raw=true" alt="NadeCon" width="115">
+  </a>
+</div>
 <br>
 <h1 align="center">
   <br>
