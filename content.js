@@ -126,14 +126,31 @@ function showMediaDownloadPopup(mediaItem) {
         let titleText = isMenu ? 'Select Quality' : (filename.length > 20 ? filename.substring(0, 20) + '...' : filename);
         let buttonText = isMenu ? 'Options ▾' : 'Download';
 
-        popup.innerHTML = `
-            <div class="popup-icon">${icon}</div>
-            <div class="popup-content">
-                <p title="${isMenu ? 'Multiple formats available' : filename}">${titleText}</p>
-                <button class="download-btn">${buttonText}</button>
-            </div>
-            <button class="close-btn">✕</button>
-        `;
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'popup-icon';
+        iconDiv.textContent = icon;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'popup-content';
+
+        const p = document.createElement('p');
+        p.title = isMenu ? 'Multiple formats available' : filename;
+        p.textContent = titleText;
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'download-btn';
+        downloadBtn.textContent = buttonText;
+
+        contentDiv.appendChild(p);
+        contentDiv.appendChild(downloadBtn);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-btn';
+        closeBtn.textContent = '✕';
+
+        popup.appendChild(iconDiv);
+        popup.appendChild(contentDiv);
+        popup.appendChild(closeBtn);
 
         if (isMenu) {
             const menu = document.createElement('div');
@@ -154,13 +171,27 @@ function showMediaDownloadPopup(mediaItem) {
                     extraInfo = item.ext || 'mp4';
                 }
 
-                menuItem.innerHTML = `
-                    <span>${item.filename}</span>
-                    <div style="display:flex; align-items:center;">
-                        <span class="format-info">${extraInfo}</span>
-                        <span class="quality-tag" style="margin-left:6px;">${quality}</span>
-                    </div>
-                `;
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = item.filename;
+
+                const infoDiv = document.createElement('div');
+                infoDiv.style.display = 'flex';
+                infoDiv.style.alignItems = 'center';
+
+                const formatSpan = document.createElement('span');
+                formatSpan.className = 'format-info';
+                formatSpan.textContent = extraInfo;
+
+                const qualitySpan = document.createElement('span');
+                qualitySpan.className = 'quality-tag';
+                qualitySpan.style.marginLeft = '6px';
+                qualitySpan.textContent = quality;
+
+                infoDiv.appendChild(formatSpan);
+                infoDiv.appendChild(qualitySpan);
+
+                menuItem.appendChild(nameSpan);
+                menuItem.appendChild(infoDiv);
 
                 menuItem.addEventListener('click', (e) => {
                     e.stopPropagation();

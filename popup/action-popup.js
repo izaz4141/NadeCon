@@ -59,59 +59,136 @@ function addUrlToPopup(mediaItem) {
     }
 
     /**
-     * Returns an SVG icon string based on the filename extension.
+     * Returns an SVG icon element based on the filename extension.
      * @param {string} filename - The filename to check.
-     * @returns {string} - The SVG icon string.
+     * @returns {SVGElement} - The SVG icon element.
      */
     function getFileIcon(filename) {
         const ext = filename.split('.').pop().toLowerCase();
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("width", "16");
+        svg.setAttribute("height", "16");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("fill", "none");
+        svg.setAttribute("stroke", "currentColor");
+        svg.setAttribute("stroke-width", "2");
+        svg.setAttribute("stroke-linecap", "round");
+        svg.setAttribute("stroke-linejoin", "round");
+        svg.classList.add("flex-shrink-0", "mr-1");
+
+        // Helper to create path
+        const createPath = (d) => {
+            const path = document.createElementNS(svgNS, "path");
+            path.setAttribute("d", d);
+            return path;
+        };
 
         // Video
         if (['mp4', 'mkv', 'webm', 'avi', 'mov', 'flv', 'wmv', 'm4v', '3gp', 'ts', 'm3u8', 'mpd'].includes(ext)) {
-            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400 flex-shrink-0 mr-1"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>`;
+            svg.classList.add("text-blue-400");
+            svg.appendChild(createPath("m22 8-6 4 6 4V8Z"));
+            const rect = document.createElementNS(svgNS, "rect");
+            rect.setAttribute("width", "14");
+            rect.setAttribute("height", "12");
+            rect.setAttribute("x", "2");
+            rect.setAttribute("y", "6");
+            rect.setAttribute("rx", "2");
+            rect.setAttribute("ry", "2");
+            svg.appendChild(rect);
+            return svg;
         }
 
         // Audio
         if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma'].includes(ext)) {
-            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400 flex-shrink-0 mr-1"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+            svg.classList.add("text-yellow-400");
+            svg.appendChild(createPath("M9 18V5l12-2v13"));
+            const c1 = document.createElementNS(svgNS, "circle");
+            c1.setAttribute("cx", "6");
+            c1.setAttribute("cy", "18");
+            c1.setAttribute("r", "3");
+            svg.appendChild(c1);
+            const c2 = document.createElementNS(svgNS, "circle");
+            c2.setAttribute("cx", "18");
+            c2.setAttribute("cy", "16");
+            c2.setAttribute("r", "3");
+            svg.appendChild(c2);
+            return svg;
         }
 
         // Image
         if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff'].includes(ext)) {
-            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400 flex-shrink-0 mr-1"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+            svg.classList.add("text-green-400");
+            const rect = document.createElementNS(svgNS, "rect");
+            rect.setAttribute("width", "18");
+            rect.setAttribute("height", "18");
+            rect.setAttribute("x", "3");
+            rect.setAttribute("y", "3");
+            rect.setAttribute("rx", "2");
+            rect.setAttribute("ry", "2");
+            svg.appendChild(rect);
+            const c = document.createElementNS(svgNS, "circle");
+            c.setAttribute("cx", "9");
+            c.setAttribute("cy", "9");
+            c.setAttribute("r", "2");
+            svg.appendChild(c);
+            svg.appendChild(createPath("m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"));
+            return svg;
         }
 
         // Archive
         if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'iso'].includes(ext)) {
-            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-400 flex-shrink-0 mr-1"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>`;
+            svg.classList.add("text-red-400");
+            svg.appendChild(createPath("M21 8v13H3V8"));
+            svg.appendChild(createPath("M1 3h22v5H1z"));
+            svg.appendChild(createPath("M10 12h4"));
+            return svg;
         }
 
         // Default File
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 flex-shrink-0 mr-1"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+        svg.classList.add("text-gray-400");
+        svg.appendChild(createPath("M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"));
+        const polyline = document.createElementNS(svgNS, "polyline");
+        polyline.setAttribute("points", "14 2 14 8 20 8");
+        svg.appendChild(polyline);
+        return svg;
     }
 
     const urlItem = document.createElement('div');
     urlItem.className = 'bg-gray-700 p-1 rounded-lg shadow-sm flex items-center justify-between text-xs break-all text-gray-200 border border-gray-600';
-    urlItem.innerHTML = `
-        <div class="flex-grow pr-2 flex items-center">
-            ${getFileIcon(filename)}
-            <span title="${filename}"
-            class="url-item-text block line-clamp-2" data-original-url="${url}">
-                ${filename}
-            </span>
-        </div>
-        <div class="flex-shrink-0 flex space-x-2">
-            <button title="Copy URL"
-            class="copy-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
+    const leftDiv = document.createElement('div');
+    leftDiv.className = 'flex-grow pr-2 flex items-center';
+
+    const iconContainer = document.createElement('div');
+    iconContainer.appendChild(getFileIcon(filename));
+    if (iconContainer.firstElementChild) {
+        leftDiv.appendChild(iconContainer.firstElementChild);
+    }
+
+    const textSpan = document.createElement('span');
+    textSpan.title = filename;
+    textSpan.className = 'url-item-text block line-clamp-2';
+    textSpan.dataset.originalUrl = url;
+    textSpan.textContent = filename;
+
+    leftDiv.appendChild(textSpan);
+
+    const rightDiv = document.createElement('div');
+    rightDiv.className = 'flex-shrink-0 flex space-x-2';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.title = 'Copy URL';
+    copyBtn.className = 'copy-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out';
+    copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
                 viewBox="0 0 24 24"><!-- Icon from Material Symbols by Google - https://github.com/google/material-design-icons/blob/master/LICENSE -->
                     <path fill="currentColor" 
                     d="M9 18q-.825 0-1.412-.587T7 16V4q0-.825.588-1.412T9 2h9q.825 0 1.413.588T20 4v12q0 .825-.587 1.413T18 18zm-4 4q-.825 0-1.412-.587T3 20V6h2v14h11v2z"/>
-                </svg>
-            </button>
-            <button title="Download"
-            class="download-btn bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
+                </svg>`;
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.title = 'Download';
+    downloadBtn.className = 'download-btn bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-2 rounded-md transition duration-150 ease-in-out';
+    downloadBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" 
                 viewBox="0 0 24 24"><!-- Icon from Material Line Icons by Vjacheslav Trushkin - https://github.com/cyberalien/line-md/blob/master/license.txt -->
                     <mask id="SVGlr8ECcZP">
                         <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
@@ -142,10 +219,13 @@ function addUrlToPopup(mediaItem) {
                         </g>
                     </mask>
                     <rect width="24" height="24" fill="currentColor" mask="url(#SVGlr8ECcZP)"/>
-                </svg>
-            </button>
-        </div>
-    `;
+                </svg>`;
+
+    rightDiv.appendChild(copyBtn);
+    rightDiv.appendChild(downloadBtn);
+
+    urlItem.appendChild(leftDiv);
+    urlItem.appendChild(rightDiv);
 
     urlItem.querySelector('.copy-btn').addEventListener('click', async () => {
         try {
