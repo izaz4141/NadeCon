@@ -53,6 +53,7 @@ A Firefox extension that detects media on webpages and sends it to [**Nadeko~don
 1. ~~Window in add-on to show media~~
 2. ~~Window in add-on to select quality and download media~~
 3. ~~Window in add-on to configure port, turnoff popup~~
+4. Open app through extension
 
 ## Troubleshooting
 1. "Error sending URL" in browser console:
