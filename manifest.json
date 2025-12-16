@@ -3,8 +3,10 @@
   "name": "NadeCon",
   "version": "3.0.1",
   "author": "Glicole",
-  "description": "Detects media from pages and connects to Nadeko Downloader",
+  "homepage_url": "https://github.com/izaz4141/NadeCon/",
+  "description": "Detects media from pages and connects to Nadeko~don",
   "icons": {
+    "48": "icons/nadecon-48.png",
     "96": "icons/nadecon-96.png"
   },
   "permissions": [
@@ -40,7 +42,10 @@
     "popup/media-popup.css"
   ],
   "browser_action": {
-    "default_icon": "icons/nadecon-96.png",
+    "default_icon": {
+      "16": "icons/nadecon-16.png",
+      "32": "icons/nadecon-32.png"
+    },
     "default_popup": "popup/action-popup.html",
     "default_title": "NadeCon"
   },
