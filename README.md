@@ -34,12 +34,8 @@
 ## Installation
 
 ### Download Packaged Extension
-1. Download the extension in [**GitHub Releases**](https://github.com/izaz4141/Nadecon/releases/latest/download/NadeCon.xpi)
-2. Go to [about:config](about:config)
-3. Turn `xpinstall.signatures.required` off ( sorry no verification yet )
-4. Go to [**Manage your Extension**](about:addons)
-5. Click on the ⚙ and select **Install Add-on from File...**
-6. Select the downloaded NadeCon.xpi
+1. Visit the [**Firefox Add-ons page**](https://addons.mozilla.org/en-US/firefox/addon/nadecon/)
+2. Click **Add to Firefox**
 
 ### Package from Source
 1. Clone this repository
@@ -47,7 +43,7 @@
     - **Not Minified**: `zip -1 -r NadeCon.xpi * -x@xpi.ignore`
     - **Minified**: `npm run build`
 3. Go to [about:config](about:config)
-4. Turn `xpinstall.signatures.required` off ( sorry no verification yet )
+4. Turn `xpinstall.signatures.required` off
 5. Go to [**Manage your Extension**](about:addons)
 6. Click on the ⚙ and select **Install Add-on from File...**
 7. Select the packaged NadeCon.xpi
