@@ -121,6 +121,8 @@ function showMediaDownloadPopup(mediaItem) {
     const renderPopup = () => {
         const popup = document.createElement('div');
         popup.className = 'media-detector-popup-item';
+        popup.targetElement = element; // Attach reference for cleanup
+        popup.dataset.popupKey = popupKey; // Attach key for cleanup
 
         let icon = '🎬';
         let titleText = isMenu ? 'Select Quality' : (filename.length > 20 ? filename.substring(0, 20) + '...' : filename);
@@ -287,7 +289,7 @@ const interceptionScript = `
                 try {
                     const data = JSON.parse(this.responseText);
                     window.postMessage({
-                        type: 'IDM_INTERCEPT_YOUTUBE',
+                        type: 'NADECON_INTERCEPT_YOUTUBE',
                         data: data,
                         url: this._url
                     }, '*');
@@ -306,7 +308,7 @@ const interceptionScript = `
         if (url && (url.includes('/player') || url.includes('videoplayback'))) {
             clone.json().then(data => {
                 window.postMessage({
-                    type: 'IDM_INTERCEPT_YOUTUBE',
+                    type: 'NADECON_INTERCEPT_YOUTUBE',
                     data: data,
                     url: url
                 }, '*');
@@ -329,6 +331,7 @@ class MediaDetector {
         // Simplified version for common media extensions
         this.commonMediaExtRegex = /\.(mp4|webm|m4v|flv|f4v|ogv|3gp|mkv|mov|avi|wmv|mpg|mpeg|m4a|mp3|wav|aac|flac|ogg|opus|m3u8|mpd|f4m|ism|isml)(?:\?|$)/i;
 
+        this.lastUrl = location.href;
         console.debug(`[MediaDetector] Initializing for site type: ${this.siteType}`);
         this.init();
     }
@@ -360,10 +363,16 @@ class MediaDetector {
         // Periodic scan for dynamic sites
         setInterval(() => this.scan(), 3000);
 
+        // Periodic URL check for SPAs
+        setInterval(() => this.checkUrlChange(), 1000);
+
+        // Periodic cleanup of orphaned popups
+        setInterval(() => this.cleanupPopups(), 2000);
+
         // Listen for intercepted messages
         window.addEventListener('message', (event) => {
             if (event.source !== window) return;
-            if (event.data.type === 'IDM_INTERCEPT_YOUTUBE') {
+            if (event.data.type === 'NADECON_INTERCEPT_YOUTUBE') {
                 this.processYouTubeResponse(event.data.data);
             }
         });
@@ -374,6 +383,31 @@ class MediaDetector {
         script.textContent = interceptionScript;
         (document.head || document.documentElement).appendChild(script);
         script.remove();
+    }
+
+    checkUrlChange() {
+        if (location.href !== this.lastUrl) {
+            this.lastUrl = location.href;
+            console.debug('[MediaDetector] URL changed, clearing popups');
+            const allPopups = document.querySelectorAll('.media-detector-popup-item');
+            allPopups.forEach(popup => popup.remove());
+            activePopupUrls.clear();
+            this.detectedYouTubeVideos.clear(); // Clear detected videos to allow re-detection
+            this.scan(); // Re-scan immediately
+        }
+    }
+
+    cleanupPopups() {
+        const allPopups = document.querySelectorAll('.media-detector-popup-item');
+        allPopups.forEach(popup => {
+            if (popup.targetElement && !popup.targetElement.isConnected) {
+                // Element removed from DOM
+                if (popup.dataset.popupKey) {
+                    activePopupUrls.delete(popup.dataset.popupKey);
+                }
+                popup.remove();
+            }
+        });
     }
 
     scan() {
@@ -482,7 +516,8 @@ class MediaDetector {
                 });
 
                 // Notify background about this URL
-                this.notifyBackground(format.url, filename);
+                const contentLength = format.contentLength ? parseInt(format.contentLength) : null;
+                this.notifyBackground(format.url, filename, { contentType: mime, contentLength });
             }
         }
 
@@ -523,7 +558,7 @@ class MediaDetector {
                 if (el.src) {
                     let filename = el.src.split('/').pop().split('?')[0];
                     if (!filename) filename = 'media';
-                    this.processUrl(el.src, filename, el);
+                    this.processUrl(el.src, filename, el, { contentType: el.type });
                 }
                 // Check child source tags
                 const sources = el.querySelectorAll('source');
@@ -531,7 +566,7 @@ class MediaDetector {
                     if (source.src) {
                         let filename = source.src.split('/').pop().split('?')[0];
                         if (!filename) filename = 'media';
-                        this.processUrl(source.src, filename, el);
+                        this.processUrl(source.src, filename, el, { contentType: source.type });
                     }
                 }
             }
@@ -576,7 +611,7 @@ class MediaDetector {
         }
     }
 
-    processUrl(url, filename, element = null) {
+    processUrl(url, filename, element = null, extra = {}) {
         if (!url || url.startsWith('blob:') || url.startsWith('data:')) return;
 
         // Basic validation to ensure it looks like a URL
@@ -590,15 +625,19 @@ class MediaDetector {
         if (!filename) filename = 'media_file';
 
         showMediaDownloadPopup({ url, filename, element });
-        this.notifyBackground(url, filename);
+        this.notifyBackground(url, filename, extra);
     }
 
-    notifyBackground(url, filename) {
+    notifyBackground(url, filename, extra = {}) {
+        console.debug(`[Content Script] Notifying background about: ${filename} (${url})`, extra);
         browser.runtime.sendMessage({
             type: "mediaUrlDetected",
             url: url,
-            filename: filename
-        }).catch(e => { });
+            filename: filename,
+            ...extra
+        }).catch(e => {
+            console.error(`[Content Script] Failed to notify background:`, e);
+        });
     }
 }
 

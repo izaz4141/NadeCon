@@ -11,6 +11,60 @@ const configBtn = document.getElementById('configBtn');
 let currentTabId = null;
 
 /**
+ * Formats bytes into human readable string
+ * @param {number} bytes 
+ * @param {number} decimals 
+ * @returns {string}
+ */
+function formatBytes(bytes, decimals = 2) {
+    if (!+bytes) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
+/**
+ * Formats a MIME type into a short, readable label.
+ * @param {string} mimeType
+ * @returns {string}
+ */
+function formatMimeType(mimeType) {
+    if (!mimeType) return '';
+    const type = mimeType.toLowerCase();
+    // Common video formats
+    if (type.includes('mp4')) return 'MP4';
+    if (type.includes('webm')) return 'WebM';
+    if (type.includes('matroska') || type.includes('mkv')) return 'MKV';
+    if (type.includes('avi')) return 'AVI';
+    if (type.includes('quicktime') || type.includes('mov')) return 'MOV';
+
+    // Streaming
+    if (type.includes('mpegurl') || type.includes('hls')) return 'HLS';
+    if (type.includes('dash')) return 'DASH';
+
+    // Audio
+    if (type.includes('audio/mpeg') || type.includes('mp3')) return 'MP3';
+    if (type.includes('audio/aac')) return 'AAC';
+    if (type.includes('audio/wav')) return 'WAV';
+    if (type.includes('audio/ogg')) return 'OGG';
+    if (type.includes('audio/')) return 'Audio';
+
+    // Images
+    if (type.includes('image/jpeg')) return 'JPG';
+    if (type.includes('image/png')) return 'PNG';
+    if (type.includes('image/gif')) return 'GIF';
+    if (type.includes('image/webp')) return 'WebP';
+    if (type.includes('image/')) return 'Image';
+
+    // Fallback: take the subtype (e.g., 'json' from 'application/json')
+    const parts = type.split('/');
+    if (parts.length > 1) return parts[1].toUpperCase().substring(0, 8); // Limit length
+    return type.substring(0, 8);
+}
+
+/**
  * Displays a temporary message in the message box.
  * @param {string} message - The message to display.
  * @param {string} type - 'success', 'error', 'info' (optional, for styling)
@@ -43,10 +97,10 @@ function showMessageBox(message, type = 'info') {
 
 /**
  * Creates and appends a media item (filename + buttons) to the list in the popup.
- * @param {{url: string, filename: string}} mediaItem - The media item object to display.
+ * @param {{url: string, filename: string, contentType: string, contentLength: number}} mediaItem - The media item object to display.
  */
 function addUrlToPopup(mediaItem) {
-    const { url, filename } = mediaItem;
+    const { url, filename, contentType, contentLength } = mediaItem;
     console.debug(`[Popup] Attempting to add media item to UI: ${filename} (${url})`);
     noUrlsMessage.classList.add('hidden');
 
@@ -165,13 +219,41 @@ function addUrlToPopup(mediaItem) {
         leftDiv.appendChild(iconContainer.firstElementChild);
     }
 
+    const textContainer = document.createElement('div');
+    textContainer.className = 'flex flex-col min-w-0 ml-2';
+
     const textSpan = document.createElement('span');
     textSpan.title = filename;
-    textSpan.className = 'url-item-text block line-clamp-2';
+    textSpan.className = 'url-item-text block truncate font-medium';
     textSpan.dataset.originalUrl = url;
     textSpan.textContent = filename;
+    textContainer.appendChild(textSpan);
 
-    leftDiv.appendChild(textSpan);
+    if (contentLength || contentType) {
+        const detailsDiv = document.createElement('div');
+        detailsDiv.className = 'flex items-center space-x-2 text-xs mt-0.5';
+
+        if (contentType) {
+            const typeBadge = document.createElement('span');
+            // Using inline style for font-size to ensure it's small enough if tailwind arbitrary values fail
+            typeBadge.className = 'bg-gray-800 text-blue-300 px-1.5 py-0.5 rounded font-medium tracking-wide border border-gray-600';
+            typeBadge.style.fontSize = '10px';
+            typeBadge.textContent = formatMimeType(contentType);
+            detailsDiv.appendChild(typeBadge);
+        }
+
+        if (contentLength) {
+            const sizeSpan = document.createElement('span');
+            sizeSpan.className = 'text-gray-400';
+            sizeSpan.style.fontSize = '11px';
+            sizeSpan.textContent = formatBytes(contentLength);
+            detailsDiv.appendChild(sizeSpan);
+        }
+
+        textContainer.appendChild(detailsDiv);
+    }
+
+    leftDiv.appendChild(textContainer);
 
     const rightDiv = document.createElement('div');
     rightDiv.className = 'flex-shrink-0 flex space-x-2';

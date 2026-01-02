@@ -152,7 +152,7 @@ class WebSocketClient {
       }
 
       const url = `ws://${nadekoBindAddress}:${nadekoServerPort}/ws?key=${encodeURIComponent(
-        nadekoApiKey
+        nadekoApiKey,
       )}`;
       console.debug(`[WebSocket] Connecting to ${url}...`);
 
@@ -261,18 +261,25 @@ async function initConfig() {
     nadekoApiKey = result.apiKey || "";
     showPopup = result.showPopup === true || result.showPopup === "true";
     console.debug(
-      `[Background Script] Config initialized - showPopup: ${showPopup} (raw value: ${result.showPopup
-      }, type: ${typeof result.showPopup})`
+      `[Background Script] Config initialized - showPopup: ${showPopup} (raw value: ${
+        result.showPopup
+      }, type: ${typeof result.showPopup})`,
     );
 
     if (nadekoApiKey) {
       wsClient.connect();
     }
 
-    if (browser.privacy && browser.privacy.websites && browser.privacy.websites.firstPartyIsolate) {
+    if (
+      browser.privacy &&
+      browser.privacy.websites &&
+      browser.privacy.websites.firstPartyIsolate
+    ) {
       const setting = await browser.privacy.websites.firstPartyIsolate.get({});
       firstPartyIsolateEnabled = setting.value;
-      console.debug(`[Background Script] First Party Isolate: ${firstPartyIsolateEnabled}`);
+      console.debug(
+        `[Background Script] First Party Isolate: ${firstPartyIsolateEnabled}`,
+      );
     }
   } catch (error) {
     console.error("[Background Script] Error initializing config:", error);
@@ -302,7 +309,10 @@ async function getCookiesForUrl(url, storeId = null) {
     }
     return cookies.map((c) => `${c.name}=${c.value}`).join(";");
   } catch (error) {
-    console.error(`[Background Script] Error getting cookies for ${url}:`, error);
+    console.error(
+      `[Background Script] Error getting cookies for ${url}:`,
+      error,
+    );
     return "";
   }
 }
@@ -310,7 +320,12 @@ async function getCookiesForUrl(url, storeId = null) {
 /**
  * Sends a given URL and an optional filename to the local Nadeko Downloader application via WebSocket.
  */
-async function sendUrlToApp(url, filename = null, referer = null, cookieStoreId = null) {
+async function sendUrlToApp(
+  url,
+  filename = null,
+  referer = null,
+  cookieStoreId = null,
+) {
   if (!wsClient.isConnected) {
     // Try to connect if not connected
     await initConfig();
@@ -322,7 +337,7 @@ async function sendUrlToApp(url, filename = null, referer = null, cookieStoreId 
   const cookie = await getCookiesForUrl(url, cookieStoreId);
 
   console.debug(
-    `[Background Script] Sending URL to Nadeko App: ${url} (Filename: ${filename})`
+    `[Background Script] Sending URL to Nadeko App: ${url} (Filename: ${filename})`,
   );
 
   const success = wsClient.send({
@@ -366,17 +381,22 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
     const urlToSend = info.linkUrl || info.srcUrl || info.pageUrl;
     if (urlToSend) {
       console.debug(
-        `[Background Script] Context menu clicked. Sending URL: ${urlToSend}`
+        `[Background Script] Context menu clicked. Sending URL: ${urlToSend}`,
       );
-      sendUrlToApp(urlToSend, null, info.pageUrl, tab ? tab.cookieStoreId : null).catch((error) => {
+      sendUrlToApp(
+        urlToSend,
+        null,
+        info.pageUrl,
+        tab ? tab.cookieStoreId : null,
+      ).catch((error) => {
         console.error(
           `[Background Script] Failed to send URL ${urlToSend} via context menu:`,
-          error
+          error,
         );
       });
     } else {
       console.warn(
-        "[Background Script] No valid URL found to send via context menu."
+        "[Background Script] No valid URL found to send via context menu.",
       );
     }
   }
@@ -414,7 +434,7 @@ async function fetchMediaHeaders(url) {
       if (response.type === "error") {
         // Explicitly check for 'error' type
         console.warn(
-          `[Background Script] HEAD request for ${url} resulted in a network error.`
+          `[Background Script] HEAD request for ${url} resulted in a network error.`,
         );
         return {
           valid: false,
@@ -445,7 +465,7 @@ async function fetchMediaHeaders(url) {
     } catch (error) {
       // This catch block handles actual fetch API errors (e.g., AbortError from timeout, network issues)
       console.warn(
-        `[Background Script] Failed to fetch headers for ${url} (caught error): ${error.message}`
+        `[Background Script] Failed to fetch headers for ${url} (caught error): ${error.message}`,
       );
       return {
         valid: false,
@@ -516,7 +536,7 @@ function deriveFilename(url, contentType, contentDisposition) {
 
   if (contentDisposition) {
     const match = /filename\*?=['"]?(?:UTF-8''|)(.*?)(?:['"]|$|;|\s)/i.exec(
-      contentDisposition
+      contentDisposition,
     );
     if (match && match[1]) {
       try {
@@ -524,7 +544,7 @@ function deriveFilename(url, contentType, contentDisposition) {
         return filename;
       } catch (e) {
         console.warn(
-          `[Background Script] Failed to decode Content-Disposition filename: ${match[1]}`
+          `[Background Script] Failed to decode Content-Disposition filename: ${match[1]}`,
         );
         filename = match[1].trim();
       }
@@ -539,7 +559,7 @@ function deriveFilename(url, contentType, contentDisposition) {
     } catch (e) {
       console.warn(
         `[Background Script] Failed to parse URL for filename: ${url}`,
-        e
+        e,
       );
       filename = "unknown_file";
     }
@@ -738,7 +758,7 @@ function parseContentDispositionFilename(contentDisposition) {
 
   // Try filename*= first (RFC 5987)
   let match = /filename\*\s*=\s*(?:UTF-8''|)([^;\s]+)/i.exec(
-    contentDisposition
+    contentDisposition,
   );
   if (match && match[1]) {
     try {
@@ -746,7 +766,7 @@ function parseContentDispositionFilename(contentDisposition) {
     } catch (e) {
       console.warn(
         "[Download Intercept] Failed to decode RFC 5987 filename:",
-        match[1]
+        match[1],
       );
     }
   }
@@ -833,7 +853,14 @@ async function getMediaDetails(url, details = null) {
     contentType &&
     (contentType.includes("mpegurl") || contentType.includes("dash+xml"));
 
-  return { url, filename, validMedia: valid, isManifest: isManifest };
+  return {
+    url,
+    filename,
+    validMedia: valid,
+    isManifest: isManifest,
+    contentType,
+    contentLength,
+  };
 }
 
 /**
@@ -853,6 +880,8 @@ async function addMediaUrl(tabId, url, source, overrides = {}) {
       filename: overrides.filename || "media",
       validMedia: true,
       isManifest: false, // Default to false for content script detected items unless specified
+      contentType: overrides.contentType || null,
+      contentLength: overrides.contentLength || null,
     };
   } else {
     // Pass overrides as details to getMediaDetails
@@ -871,7 +900,7 @@ async function addMediaUrl(tabId, url, source, overrides = {}) {
   // Check if exact URL already exists to prevent true duplicates
   if (urlsForTab.has(mediaItem.url)) {
     console.debug(
-      `[Background Script] URL ${mediaItem.url} already exists for tab ${tabId}. Skipping.`
+      `[Background Script] URL ${mediaItem.url} already exists for tab ${tabId}. Skipping.`,
     );
     return;
   }
@@ -905,12 +934,12 @@ async function addMediaUrl(tabId, url, source, overrides = {}) {
       })
       .catch((error) => {
         console.debug(
-          `[Background Script] Could not send showMediaPopup to tab ${tabId}: ${error.message}`
+          `[Background Script] Could not send showMediaPopup to tab ${tabId}: ${error.message}`,
         );
       });
   } else {
     console.debug(
-      `[Background Script] Skipping showMediaPopup for tabId: ${tabId} (Source: ${source}).`
+      `[Background Script] Skipping showMediaPopup for tabId: ${tabId} (Source: ${source}).`,
     );
   }
 }
@@ -998,7 +1027,7 @@ function checkResponseHeaders(details) {
     try {
       const urlObj = new URL(url);
       filename = urlObj.pathname.split("/").pop();
-    } catch (e) { }
+    } catch (e) {}
   }
 
   let ext = filename ? filename.split(".").pop().toLowerCase() : "";
@@ -1163,7 +1192,7 @@ browser.webRequest.onBeforeRequest.addListener(
           details.type === "object"
         ) {
           addMediaUrl(details.tabId, details.url, "webRequest").catch(
-            (e) => { }
+            (e) => {},
           );
         }
       }
@@ -1180,7 +1209,7 @@ browser.webRequest.onBeforeRequest.addListener(
       "object",
     ],
   },
-  ["requestBody"]
+  ["requestBody"],
 );
 
 // --- WebRequest Listener for tracking redirects ---
@@ -1193,7 +1222,7 @@ browser.webRequest.onBeforeRedirect.addListener(
       request.redirectUrl = details.redirectUrl;
       request.redirectChain.push(details.redirectUrl);
       console.debug(
-        `[Download Intercept] Redirect detected: ${request.url} -> ${details.redirectUrl}`
+        `[Download Intercept] Redirect detected: ${request.url} -> ${details.redirectUrl}`,
       );
     }
   },
@@ -1207,7 +1236,7 @@ browser.webRequest.onBeforeRedirect.addListener(
       "media",
       "object",
     ],
-  }
+  },
 );
 
 // --- WebRequest Listener for tracking request headers (Referer) ---
@@ -1224,7 +1253,7 @@ browser.webRequest.onSendHeaders.addListener(
     }
   },
   { urls: ["<all_urls>"] },
-  ["requestHeaders"]
+  ["requestHeaders"],
 );
 
 // --- WebRequest Listener for intercepting downloads (Headers Received) ---
@@ -1275,9 +1304,9 @@ browser.webRequest.onHeadersReceived.addListener(
             request.method,
             request.requestBody,
             request.referer,
-            details.cookieStoreId
+            details.cookieStoreId,
           ),
-        0
+        0,
       );
 
       return { cancel: true };
@@ -1295,7 +1324,7 @@ browser.webRequest.onHeadersReceived.addListener(
         contentType,
         contentDisposition,
         contentLength,
-      }).catch((e) => { });
+      }).catch((e) => {});
     }
 
     return { cancel: false };
@@ -1311,7 +1340,7 @@ browser.webRequest.onHeadersReceived.addListener(
       "object",
     ],
   },
-  ["blocking", "responseHeaders"]
+  ["blocking", "responseHeaders"],
 );
 
 /**
@@ -1334,7 +1363,7 @@ async function handleInterceptedDownload(
   requestBody = null,
   referer = null,
   cookieStoreId = null,
-  retryCount = 0
+  retryCount = 0,
 ) {
   console.debug(`[Download Intercept] Handling intercepted download: ${url}`);
   const isAlive = await isLocalhostAlive();
@@ -1348,12 +1377,14 @@ async function handleInterceptedDownload(
           referer = tab.url;
         }
       } catch (e) {
-        console.warn(`[Download Intercept] Failed to get tab URL for referer: ${e}`);
+        console.warn(
+          `[Download Intercept] Failed to get tab URL for referer: ${e}`,
+        );
       }
     }
 
     console.debug(
-      `[Download Intercept] Nadeko App is connected. Sending to Nadeko: ${url} as ${filename}`
+      `[Download Intercept] Nadeko App is connected. Sending to Nadeko: ${url} as ${filename}`,
     );
 
     try {
@@ -1371,7 +1402,7 @@ async function handleInterceptedDownload(
         } else if (requestBody.raw) {
           // Convert raw data to base64 if needed
           console.debug(
-            "[Download Intercept] POST request with raw data detected"
+            "[Download Intercept] POST request with raw data detected",
           );
         }
       }
@@ -1396,8 +1427,9 @@ async function handleInterceptedDownload(
       if (retryCount < 2) {
         const retryDelay = Math.pow(2, retryCount) * 500; // 500ms, 1s
         console.debug(
-          `[Download Intercept] Retrying in ${retryDelay}ms... (attempt ${retryCount + 1
-          }/2)`
+          `[Download Intercept] Retrying in ${retryDelay}ms... (attempt ${
+            retryCount + 1
+          }/2)`,
         );
 
         setTimeout(() => {
@@ -1410,7 +1442,7 @@ async function handleInterceptedDownload(
             requestBody,
             referer,
             cookieStoreId,
-            retryCount + 1
+            retryCount + 1,
           );
         }, retryDelay);
         return;
@@ -1418,13 +1450,13 @@ async function handleInterceptedDownload(
 
       // After retries exhausted, fall back to browser download
       console.error(
-        `[Download Intercept] Failed after ${retryCount} retries. Falling back to browser download: ${url}`
+        `[Download Intercept] Failed after ${retryCount} retries. Falling back to browser download: ${url}`,
       );
       fallbackToBrowserDownload(url, filename);
     }
   } else {
     console.debug(
-      `[Download Intercept] Nadeko App is not connected. Using browser download for: ${url}`
+      `[Download Intercept] Nadeko App is not connected. Using browser download for: ${url}`,
     );
     fallbackToBrowserDownload(url, filename);
   }
@@ -1446,7 +1478,7 @@ function fallbackToBrowserDownload(url, filename) {
     .catch((error) => {
       console.error(
         `[Download Intercept] Browser download also failed: ${url}`,
-        error
+        error,
       );
       // As last resort, try with saveAs prompt
       browser.downloads
@@ -1459,7 +1491,7 @@ function fallbackToBrowserDownload(url, filename) {
         .catch((finalError) => {
           console.error(
             `[Download Intercept] All download methods failed: ${url}`,
-            finalError
+            finalError,
           );
         });
     });
@@ -1470,11 +1502,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "getMediaUrls" && message.tabId !== undefined) {
     // Convert Map values to an Array for the popup
     const mediaItems = Array.from(
-      scrapedMediaUrls.get(message.tabId)?.values() || []
+      scrapedMediaUrls.get(message.tabId)?.values() || [],
     );
     console.debug(
       `[Background Script] Sending media items to popup for tab ${message.tabId}:`,
-      mediaItems
+      mediaItems,
     );
     sendResponse({ mediaItems: mediaItems });
     return true;
@@ -1482,16 +1514,20 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     addMediaUrl(sender.tab.id, message.url, "contentScript", {
       forceValid: true,
       filename: message.filename,
+      contentType: message.contentType,
+      contentLength: message.contentLength,
     }).catch((error) => {
       console.error(
         `[Background Script] Error adding URL from content script: ${message.url}`,
-        error
+        error,
       );
     });
   } else if (message.type === "initiateSmartDownload") {
-    const { url, filename, tabId } = message;
+    const { url, filename } = message;
+    const tabId = sender.tab ? sender.tab.id : message.tabId;
+
     console.debug(
-      `[Background Script] Received initiateSmartDownload request for: ${url} as ${filename} (TabId: ${tabId})`
+      `[Background Script] Received initiateSmartDownload request for: ${url} as ${filename} (TabId: ${tabId})`,
     );
     // When initiateSmartDownload is triggered, it's explicitly by user intent
     // so we assume it's a valid target and send it.
@@ -1502,7 +1538,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       tabId,
       "GET",
       null,
-      null
+      null,
     )
       .then(() => {
         sendResponse({
@@ -1527,7 +1563,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch((error) => {
         console.error(
           "[Background Script] Error during checkLocalhostStatus:",
-          error
+          error,
         );
         sendResponse({ isAlive: false, error: error.message });
       });
@@ -1538,7 +1574,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     nadekoApiKey = message.newApiKey;
     showPopup = message.showChecked === true || message.showChecked === "true";
     console.debug(
-      `[Background Script] showPopup updated via configChanged: ${showPopup}`
+      `[Background Script] showPopup updated via configChanged: ${showPopup}`,
     );
 
     // Reconnect WebSocket with new settings
@@ -1548,7 +1584,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   } else if (message.type === "copyUrl") {
     console.debug(
-      `[Background Script] Received copyUrl message. Clipboard operation is handled in popup.`
+      `[Background Script] Received copyUrl message. Clipboard operation is handled in popup.`,
     );
     sendResponse({ success: true, message: "Copy initiated by popup." });
     return true;
@@ -1562,13 +1598,13 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         .catch((error) => {
           console.warn(
             `[Background Script] Could not send closeAllPopups to tab ${message.tabId}:`,
-            error
+            error,
           );
         });
       sendResponse({ success: true });
     } else {
       console.warn(
-        "[Background Script] ClearUrls message received without tabId. Clearing all URLs across all tabs."
+        "[Background Script] ClearUrls message received without tabId. Clearing all URLs across all tabs.",
       );
       scrapedMediaUrls.clear(); // Clear all tabs' URLs
       mediaDetailsCache.clear(); // Clear global cache for all URLs
@@ -1582,7 +1618,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
               .catch((error) => {
                 console.warn(
                   `[Background Script] Could not send closeAllPopups to tab ${tab.id}:`,
-                  error
+                  error,
                 );
               });
           }
@@ -1604,9 +1640,12 @@ browser.tabs.onRemoved.addListener((tabId) => {
 });
 
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // Clear URLs for a tab if it navigates to a new main URL
-  if (changeInfo.url && scrapedMediaUrls.has(tabId)) {
-    scrapedMediaUrls.delete(tabId);
-    console.debug(`Cleared URLs for tab ${tabId} due to navigation.`);
+  // Clear URLs for a tab only when it starts loading a new page
+  // This helps preserve data during SPA navigations or minor URL updates
+  if (changeInfo.status === "loading") {
+    if (scrapedMediaUrls.has(tabId)) {
+      scrapedMediaUrls.delete(tabId);
+      console.debug(`Cleared URLs for tab ${tabId} due to loading status.`);
+    }
   }
 });
