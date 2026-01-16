@@ -9,6 +9,7 @@ let nadekoBindAddress = "localhost";
 let nadekoApiKey = "";
 let showPopup = false;
 let firstPartyIsolateEnabled = false;
+let serverConnected = false;
 
 const CONTENT_TYPE_EXTENSIONS = {
   "text/html": "HTML|HTM",
@@ -116,134 +117,46 @@ const CONTENT_TYPE_EXTENSIONS = {
   "flv-application/octet-stream": "FLV",
 };
 
-/**
- * WebSocket Client for communicating with Nadeko App
- */
-class WebSocketClient {
-  constructor() {
-    this.ws = null;
-    this.isConnected = false;
-    this.reconnectInterval = 5000;
-    this.reconnectTimer = null;
-    this.pingInterval = null;
-    this.updateBadge();
-  }
+// Polling for server status
+setInterval(checkServerStatus, 5000);
 
-  updateBadge() {
-    if (this.isConnected) {
+async function checkServerStatus() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    // Status endpoint doesn't strictly need auth for availability check
+    const response = await fetch(
+      `http://${nadekoBindAddress}:${nadekoServerPort}/api/nadeko/status`,
+      {
+        method: "GET",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": nadekoApiKey,
+        },
+      },
+    );
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
       browser.browserAction.setBadgeText({ text: "" });
+      serverConnected = true;
+      return true;
     } else {
+      // throw new Error("Server returned " + response.status);
       browser.browserAction.setBadgeText({ text: "X" });
       browser.browserAction.setBadgeBackgroundColor({ color: "#606060" });
+      serverConnected = false;
+      return false;
     }
-  }
-
-  connect() {
-    return new Promise((resolve) => {
-      if (this.ws) {
-        this.ws.close();
-      }
-
-      if (!nadekoApiKey) {
-        console.warn("[WebSocket] No API Key configured. Cannot connect.");
-        this.updateBadge();
-        resolve(false);
-        return;
-      }
-
-      const url = `ws://${nadekoBindAddress}:${nadekoServerPort}/ws?key=${encodeURIComponent(
-        nadekoApiKey,
-      )}`;
-      console.debug(`[WebSocket] Connecting to ${url}...`);
-
-      this.ws = new WebSocket(url);
-
-      this.ws.onopen = () => {
-        console.debug("[WebSocket] Connected");
-        this.isConnected = true;
-        this.stopReconnect();
-        this.startPing();
-        this.updateBadge();
-        resolve(true);
-      };
-
-      this.ws.onclose = () => {
-        console.debug("[WebSocket] Disconnected");
-        this.isConnected = false;
-        this.stopPing();
-        this.startReconnect();
-        this.updateBadge();
-      };
-
-      this.ws.onerror = (error) => {
-        console.error("[WebSocket] Error:", error);
-        this.ws.close();
-        resolve(false);
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          this.handleMessage(msg);
-        } catch (e) {
-          console.error("[WebSocket] Failed to parse message:", e);
-        }
-      };
-    });
-  }
-
-  handleMessage(msg) {
-    if (msg.type === "pong") {
-      // Pong received
-    } else if (msg.type === "event") {
-      console.debug(`[WebSocket] Event received: ${msg.event}`, msg);
-    } else if (msg.type === "error") {
-      console.error(`[WebSocket] Server error: ${msg.message}`);
-    } else if (msg.type === "success") {
-      console.debug(`[WebSocket] Success: ${msg.id}`);
-    }
-  }
-
-  send(data) {
-    if (this.isConnected && this.ws) {
-      this.ws.send(JSON.stringify(data));
-      return true;
-    }
+  } catch (e) {
+    browser.browserAction.setBadgeText({ text: "X" });
+    browser.browserAction.setBadgeBackgroundColor({ color: "#606060" });
+    serverConnected = false;
     return false;
   }
-
-  startReconnect() {
-    if (!this.reconnectTimer) {
-      this.reconnectTimer = setTimeout(() => {
-        this.reconnectTimer = null;
-        this.connect();
-      }, this.reconnectInterval);
-    }
-  }
-
-  stopReconnect() {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-  }
-
-  startPing() {
-    this.stopPing();
-    this.pingInterval = setInterval(() => {
-      this.send({ type: "ping" });
-    }, 30000);
-  }
-
-  stopPing() {
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-      this.pingInterval = null;
-    }
-  }
 }
-
-const wsClient = new WebSocketClient();
 
 /**
  * Initializes the Nadeko server port and API key from storage.
@@ -261,14 +174,12 @@ async function initConfig() {
     nadekoApiKey = result.apiKey || "";
     showPopup = result.showPopup === true || result.showPopup === "true";
     console.debug(
-      `[Background Script] Config initialized - showPopup: ${showPopup} (raw value: ${
-        result.showPopup
+      `[Background Script] Config initialized - showPopup: ${showPopup} (raw value: ${result.showPopup
       }, type: ${typeof result.showPopup})`,
     );
 
-    if (nadekoApiKey) {
-      wsClient.connect();
-    }
+    // Check status immediately on init
+    checkServerStatus();
 
     if (
       browser.privacy &&
@@ -326,12 +237,9 @@ async function sendUrlToApp(
   referer = null,
   cookieStoreId = null,
 ) {
-  if (!wsClient.isConnected) {
-    // Try to connect if not connected
+  // Ensure config is loaded
+  if (!nadekoApiKey) {
     await initConfig();
-    if (!wsClient.isConnected) {
-      throw new Error("Not connected to Nadeko App");
-    }
   }
 
   const cookie = await getCookiesForUrl(url, cookieStoreId);
@@ -340,17 +248,34 @@ async function sendUrlToApp(
     `[Background Script] Sending URL to Nadeko App: ${url} (Filename: ${filename})`,
   );
 
-  const success = wsClient.send({
-    type: "download",
+  const payload = {
     url: url,
     filename: filename,
     cookie: cookie,
     user_agent: navigator.userAgent,
     referer: referer,
-  });
+  };
 
-  if (!success) {
-    throw new Error("Failed to send message via WebSocket");
+  try {
+    const response = await fetch(
+      `http://${nadekoBindAddress}:${nadekoServerPort}/api/nadeko/add-download`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": nadekoApiKey,
+        },
+        body: JSON.stringify(payload),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    console.debug("[Background Script] Sent successfully");
+  } catch (e) {
+    console.error("[Background Script] Failed to send:", e);
+    throw e;
   }
 }
 
@@ -358,14 +283,7 @@ async function sendUrlToApp(
  * Checks if the local application is alive (connected via WebSocket).
  */
 async function isLocalhostAlive(forceCheck = false) {
-  if (forceCheck) {
-    if (wsClient.isConnected) {
-      wsClient.send({ type: "ping" });
-    } else {
-      await wsClient.connect();
-    }
-  }
-  return wsClient.isConnected;
+  return await checkServerStatus();
 }
 
 // Create a context menu item for "Send to Nadeko"
@@ -1027,7 +945,7 @@ function checkResponseHeaders(details) {
     try {
       const urlObj = new URL(url);
       filename = urlObj.pathname.split("/").pop();
-    } catch (e) {}
+    } catch (e) { }
   }
 
   let ext = filename ? filename.split(".").pop().toLowerCase() : "";
@@ -1192,7 +1110,7 @@ browser.webRequest.onBeforeRequest.addListener(
           details.type === "object"
         ) {
           addMediaUrl(details.tabId, details.url, "webRequest").catch(
-            (e) => {},
+            (e) => { },
           );
         }
       }
@@ -1259,7 +1177,7 @@ browser.webRequest.onSendHeaders.addListener(
 // --- WebRequest Listener for intercepting downloads (Headers Received) ---
 browser.webRequest.onHeadersReceived.addListener(
   (details) => {
-    if (!wsClient.isConnected) return { cancel: false };
+    if (!serverConnected) return { cancel: false };
 
     const requestId = details.requestId;
     let request = downloadRequests.get(requestId);
@@ -1324,7 +1242,7 @@ browser.webRequest.onHeadersReceived.addListener(
         contentType,
         contentDisposition,
         contentLength,
-      }).catch((e) => {});
+      }).catch((e) => { });
     }
 
     return { cancel: false };
@@ -1427,8 +1345,7 @@ async function handleInterceptedDownload(
       if (retryCount < 2) {
         const retryDelay = Math.pow(2, retryCount) * 500; // 500ms, 1s
         console.debug(
-          `[Download Intercept] Retrying in ${retryDelay}ms... (attempt ${
-            retryCount + 1
+          `[Download Intercept] Retrying in ${retryDelay}ms... (attempt ${retryCount + 1
           }/2)`,
         );
 
@@ -1577,8 +1494,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       `[Background Script] showPopup updated via configChanged: ${showPopup}`,
     );
 
-    // Reconnect WebSocket with new settings
-    wsClient.connect();
+    // Check server status with new settings
+    checkServerStatus();
 
     sendResponse({ success: true });
     return true;

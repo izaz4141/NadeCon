@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "NadeCon",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "author": "Glicole",
   "homepage_url": "https://github.com/izaz4141/NadeCon/",
   "description": "Detects media from pages and connects to Nadeko~don",
