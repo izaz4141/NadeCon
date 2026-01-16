@@ -1,6 +1,6 @@
 {
     "name": "nadecon",
-    "version": "3.0.1",
+    "version": "4.0.1",
     "description": "Detects media from pages and connects to Nadeko Downloader",
     "scripts": {
         "build": "webpack"
