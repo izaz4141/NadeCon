@@ -127,7 +127,7 @@ async function checkServerStatus() {
 
     // Status endpoint doesn't strictly need auth for availability check
     const response = await fetch(
-      `http://${nadekoBindAddress}:${nadekoServerPort}/api/nadeko/status`,
+      `http://${nadekoBindAddress}:${nadekoServerPort}/api/nadeko/system/status`,
       {
         method: "GET",
         signal: controller.signal,
@@ -174,7 +174,8 @@ async function initConfig() {
     nadekoApiKey = result.apiKey || "";
     showPopup = result.showPopup === true || result.showPopup === "true";
     console.debug(
-      `[Background Script] Config initialized - showPopup: ${showPopup} (raw value: ${result.showPopup
+      `[Background Script] Config initialized - showPopup: ${showPopup} (raw value: ${
+        result.showPopup
       }, type: ${typeof result.showPopup})`,
     );
 
@@ -258,7 +259,7 @@ async function sendUrlToApp(
 
   try {
     const response = await fetch(
-      `http://${nadekoBindAddress}:${nadekoServerPort}/api/nadeko/add-download`,
+      `http://${nadekoBindAddress}:${nadekoServerPort}/api/nadeko/download/add`,
       {
         method: "POST",
         headers: {
@@ -945,7 +946,7 @@ function checkResponseHeaders(details) {
     try {
       const urlObj = new URL(url);
       filename = urlObj.pathname.split("/").pop();
-    } catch (e) { }
+    } catch (e) {}
   }
 
   let ext = filename ? filename.split(".").pop().toLowerCase() : "";
@@ -1110,7 +1111,7 @@ browser.webRequest.onBeforeRequest.addListener(
           details.type === "object"
         ) {
           addMediaUrl(details.tabId, details.url, "webRequest").catch(
-            (e) => { },
+            (e) => {},
           );
         }
       }
@@ -1242,7 +1243,7 @@ browser.webRequest.onHeadersReceived.addListener(
         contentType,
         contentDisposition,
         contentLength,
-      }).catch((e) => { });
+      }).catch((e) => {});
     }
 
     return { cancel: false };
@@ -1345,7 +1346,8 @@ async function handleInterceptedDownload(
       if (retryCount < 2) {
         const retryDelay = Math.pow(2, retryCount) * 500; // 500ms, 1s
         console.debug(
-          `[Download Intercept] Retrying in ${retryDelay}ms... (attempt ${retryCount + 1
+          `[Download Intercept] Retrying in ${retryDelay}ms... (attempt ${
+            retryCount + 1
           }/2)`,
         );
 
