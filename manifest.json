@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "NadeCon",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "author": "Glicole",
   "homepage_url": "https://github.com/izaz4141/NadeCon/",
   "description": "Detects media from pages and connects to Nadeko~don",
@@ -23,24 +23,16 @@
     "<all_urls>"
   ],
   "background": {
-    "scripts": [
-      "background.js"
-    ]
+    "scripts": ["background.js"]
   },
   "content_scripts": [
     {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "content.js"
-      ],
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
       "run_at": "document_idle"
     }
   ],
-  "web_accessible_resources": [
-    "popup/media-popup.css"
-  ],
+  "web_accessible_resources": ["popup/media-popup.css"],
   "browser_action": {
     "default_icon": {
       "16": "icons/nadecon-16.png",
@@ -54,9 +46,7 @@
       "id": "nadecon@glicole.id",
       "strict_min_version": "142.0",
       "data_collection_permissions": {
-        "required": [
-          "none"
-        ]
+        "required": ["none"]
       }
     }
   }
